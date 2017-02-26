@@ -19,10 +19,10 @@ There are already implementations([<span/>3]) for a lot of platforms, but few of
 
 Thank you!
 
-Best Regards,
+Best Regards,<br>
 Marc R. Fischer
 
 
-[<span/> 1]<span/>: https://lvdmaaten.github.io/publications/papers/JMLR_2008.pdf "Visualizing Data using t-SNE"
-[<span/> 2]<span/>: https://lvdmaaten.github.io/publications/papers/JMLR_2014.pdf "Accelerating t-SNE using Tree-Based Algorithms"
+[<span/> 1]<span/>: https://lvdmaaten.github.io/publications/papers/JMLR_2008.pdf "Visualizing Data using t-SNE" <br>
+[<span/> 2]<span/>: https://lvdmaaten.github.io/publications/papers/JMLR_2014.pdf "Accelerating t-SNE using Tree-Based Algorithms"<br>
 [<span/> 3]<span/>: https://lvdmaaten.github.io/tsne/#implementations "Implementations"
