@@ -1,0 +1,3 @@
+[submodule "project_information/implementations/bhtsne"]
+	path = project_information/implementations/bhtsne
+	url = git@github.com:lvdmaaten/bhtsne.git
