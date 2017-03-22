@@ -4,12 +4,12 @@ How to Write Fast Numerical Code Project @ ETHZ 2017
 
 ## TODO
 
-- make naive c implementation working (Marc, 26.03)
-- veryify c implementation mathematically (Alberto)
-- Investigate n-log(n) variant (Marko, Andy) (Paper, Implementation of Stuctures)
-- instrument code (time based, RDTCS 1st Exercise)
-	- instrument own C (Marc)
-	- instrument C++ (Alberto)
-- try optimization flags
-- devise optimization starategy
-- implment intrinsics
+* [ ] Make naive C implementation working (Marc, 26.03)
+* [ ] Verify C implementation mathematically and numerically (Alberto)
+* [ ] Investigate `n-log(n)` variant (Marko, Andy) (Paper, Implementation of Stuctures)
+* [ ] Instrument code (time based, RDTCS 1st Exercise)
+	- Instrument own C (Marc)
+	- Instrument C++ (Alberto)
+* [ ] Try optimization flags
+* [ ] Devise optimization strategy
+* [ ] Implement intrinsics
