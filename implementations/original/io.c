@@ -80,7 +80,7 @@ void save_data(double* data, double* costs, int n, int d, char* data_file) {
 	// Open file, write first 2 integers and then the data
 	FILE *h;
 	if((h = fopen(data_file, "w+b")) == NULL) {
-		printf("Error: could not open data file.\n");
+		printf("Error: could not open data file (%s).\n", data_file);
 		return;
 	}
 	fwrite(&n, sizeof(int), 1, h);
@@ -89,4 +89,20 @@ void save_data(double* data, double* costs, int n, int d, char* data_file) {
     fwrite(costs, sizeof(double), n, h);
     fclose(h);
 	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
+}
+
+void save_numeric_data(double* data, int N, char* data_file) {
+    /* Function to save snapshots of numeric vectors and matrices to compare
+    with future implementations.
+    */
+    FILE *h;
+    if((h = fopen(data_file, "w+b")) == NULL) {
+		printf("Error: could not open numeric data file (%s).\n", data_file);
+		return;
+	}
+
+    fwrite(&N, sizeof(int), 1, h);
+    fwrite(data, sizeof(double), N, h);
+    fclose(h);
+    printf("Save numeric matrix at %s\n", data_file);
 }
