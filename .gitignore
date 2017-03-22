@@ -37,3 +37,6 @@
 
 # Private
 private
+
+# Data files
+*.dat
