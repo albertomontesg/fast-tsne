@@ -12,4 +12,4 @@ NUMBERS=$(shell seq $(START) $(STEP) $(END))
 all: tsne
 
 tsne:
-	$(CC) $(CFLAGS) sptree.cpp tsne.cpp io.c -o ./$(BIN)
+	$(CC) $(CFLAGS) sptree.cpp tsne.cpp ../utils/io.c -o ./$(BIN)

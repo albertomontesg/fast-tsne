@@ -26,7 +26,7 @@ bool load_data(double* data, int n, int* d, char* data_file) {
     magic_number = reverse_int(magic_number);
     if (magic_number != 2051) {
         printf("Invalid magic number, it should be 2051, instead %d found\n", magic_number);
-        //return false;
+        return false;
     }
     fread(&origN, sizeof(uint32_t), 1, h);
     origN = reverse_int(origN);

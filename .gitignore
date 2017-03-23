@@ -40,3 +40,6 @@ private
 
 # Data files
 *.dat
+
+# Resulting binary files
+bh_tsne
