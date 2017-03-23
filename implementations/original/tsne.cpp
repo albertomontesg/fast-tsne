@@ -49,13 +49,19 @@
 #define COUNTING 0
 #define NUMERIC_CHECK 0
 #define BENCHMARK 1
+#define NUM_RUNS 2
 
-// Avoid printing to console and counting flops operations while benchmarking 
+// Avoid any other task while benchmarking
 #if BENCHMARK == 1
 #undef DEBUG
 #define DEBUG 0
 #undef COUNTING
 #define COUNTING 0
+#undef NUMERIC_CHECK
+#define NUMERIC_CHECK 0
+#else
+#undef NUM_RUNS
+#define NUM_RUNS 1
 #endif
 
 using namespace std;
@@ -726,27 +732,41 @@ int main(int argc, char **argv) {
     // Define some variables
 	int D;
 	double *data = (double*) malloc(N * 784 * sizeof(double));
-    TSNE* tsne = new TSNE();
+    double* Y = (double*) malloc(N * no_dims * sizeof(double));
+    double* costs = (double*) calloc(N, sizeof(double));
+    if(data == NULL) { printf("[data] Memory allocation failed!\n"); exit(1); }
+    if(costs == NULL) { printf("[costs] Memory allocation failed!\n"); exit(1); }
+    if(Y == NULL ) { printf("[Y] Memory allocation failed!\n"); exit(1); }
 
     // Read the parameters and the dataset
-	if(load_data(data, N, &D, data_file)) {
+    bool success = load_data(data, N, &D, data_file);
+    if (!success) exit(1);
 
-		// Now fire up the SNE implementation
-		double* Y = (double*) malloc(N * no_dims * sizeof(double));
-		double* costs = (double*) calloc(N, sizeof(double));
-        if(costs == NULL) { printf("[costs] Memory allocation failed!\n"); exit(1); }
-        if(Y == NULL ) { printf("[Y] Memory allocation failed!\n"); exit(1); }
 
+    TSNE* tsne = new TSNE();
+
+#ifdef BENCHMARK
+    double cycles;
+    myInt64 start;
+    start = start_tsc();
+#endif
+    int num_runs = NUM_RUNS;
+
+    for (int i = 0; i < num_runs; i++) {
         // Run t-SNE
-		tsne->run(data, N, D, Y, no_dims, perplexity, theta, false, max_iter);
-
-		// Save the results
-		save_data(Y, costs, N, no_dims, result_file);
-
-        // Clean up the memory
-		free(data);   data = NULL;
-		free(Y);      Y = NULL;
-		free(costs);  costs = NULL;
+    	tsne->run(data, N, D, Y, no_dims, perplexity, theta, false, max_iter);
     }
+
+#ifdef BENCHMARK
+    cycles = (double) stop_tsc(start) / num_runs;
+    printf("RDTSC instruction:\n%lf cycles measured\n", cycles);
+#endif
+	// Save the results
+	save_data(Y, costs, N, no_dims, result_file);
+
+    // Clean up the memory
+	free(data);   data = NULL;
+	free(Y);      Y = NULL;
+	free(costs);  costs = NULL;
     delete(tsne);
 }
