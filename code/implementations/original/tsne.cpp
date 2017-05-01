@@ -48,8 +48,8 @@
 #define DEBUG 1
 #define COUNTING 0
 #define NUMERIC_CHECK 0
-#define BENCHMARK 1
-#define NUM_RUNS 2
+#define BENCHMARK 0
+#define NUM_RUNS 1
 
 // Avoid any other task while benchmarking
 #if BENCHMARK == 1
@@ -67,21 +67,24 @@
 using namespace std;
 
 // Perform t-SNE
-void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexity, double theta,
-               bool skip_random_init, int max_iter, int stop_lying_iter, int mom_switch_iter) {
+void TSNE::run(double* X, int N, int D, double* Y, int no_dims,
+               double perplexity, double theta,
+               int max_iter, int stop_lying_iter, int mom_switch_iter) {
 
     // Determine whether we are using an exact algorithm
     if(N - 1 < 3 * perplexity) { printf("Perplexity too large for the number of data points!\n"); exit(1); }
 
+    bool exact = (theta == .0) ? true : false;
 #if DEBUG == 1
     printf("Using no_dims = %d, perplexity = %f, and theta = %f\n", no_dims, perplexity, theta);
-#endif
+    if (exact) printf("Using exact method to compute gradients.\n");
+    else printf("Using Barnes-Hut algorithm to compute gradients.\n");
 
-    bool exact = (theta == .0) ? true : false;
-
-    // Set learning parameters
     float total_time = .0;
     clock_t start, end;
+#endif
+
+    // Set learning parameters
 	double momentum = .5, final_momentum = .8;
 	double eta = 200.0;
 
@@ -94,11 +97,12 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     for(int i = 0; i < N * no_dims; i++)    uY[i] =  .0;
     for(int i = 0; i < N * no_dims; i++) gains[i] = 1.0;
 
-    // Normalize input data (to prevent numerical problems)
 #if DEBUG == 1
     printf("Computing input similarities...\n");
-#endif
     start = clock();
+#endif
+
+    // Normalize input data (to prevent numerical problems)
     zeroMean(X, N, D);
     double max_X = .0;
     for(int i = 0; i < N * D; i++) {
@@ -111,7 +115,6 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
     if(exact) {
 
         // Compute similarities
-        printf("Exact?");
         P = (double*) malloc(N * N * sizeof(double));
         if(P == NULL) { printf("[P] Memory allocation failed!\n"); exit(1); }
         computeGaussianPerplexity(X, N, D, P, perplexity);
@@ -147,24 +150,21 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
         for(int i = 0; i < row_P[N]; i++) sum_P += val_P[i];
         for(int i = 0; i < row_P[N]; i++) val_P[i] /= sum_P;
     }
+#if DEBUG == 1
     end = clock();
+#endif
 
     // Lie about the P-values
     if(exact) { for(int i = 0; i < N * N; i++)        P[i] *= 12.0; }
     else {      for(int i = 0; i < row_P[N]; i++) val_P[i] *= 12.0; }
 
-	// Initialize solution (randomly)
-  if (skip_random_init != true) {
-  	for(int i = 0; i < N * no_dims; i++) Y[i] = randn() * .0001;
-  }
-
-	// Perform main training loop
 #if DEBUG == 1
     if(exact) printf("Input similarities computed in %4.2f seconds!\nLearning embedding...\n", (float) (end - start) / CLOCKS_PER_SEC);
     else printf("Input similarities computed in %4.2f seconds (sparsity = %f)!\nLearning embedding...\n", (float) (end - start) / CLOCKS_PER_SEC, (double) row_P[N] / ((double) N * (double) N));
-#endif
     start = clock();
+#endif
 
+    // Perform main training loop
 	for(int iter = 0; iter < max_iter; iter++) {
 
         // Compute (approximate) gradient
@@ -191,19 +191,24 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims, double perplexit
 
         // Print out progress
         if (iter > 0 && (iter % 50 == 0 || iter == max_iter - 1)) {
+#if DEGUB == 1
             end = clock();
+#endif
             double C = .0;
             if(exact) C = evaluateError(P, Y, N, no_dims);
             else      C = evaluateError(row_P, col_P, val_P, Y, N, no_dims, theta);  // doing approximate computation here!
 
-            total_time += (float) (end - start) / CLOCKS_PER_SEC;
 #if DEBUG == 1
+            total_time += (float) (end - start) / CLOCKS_PER_SEC;
             printf("Iteration %d: error is %f (50 iterations in %4.2f seconds)\n", iter, C, (float) (end - start) / CLOCKS_PER_SEC);
+            start = clock();
 #endif
-			start = clock();
         }
     }
+
+#if DEBUG == 1
     end = clock(); total_time += (float) (end - start) / CLOCKS_PER_SEC;
+#endif
 
     // Clean up memory
     free(dY);
@@ -675,7 +680,7 @@ void TSNE::zeroMean(double* X, int N, int D) {
 
 
 // Generates a Gaussian random number
-double TSNE::randn() {
+double randn() {
 	double x, y, radius;
 	do {
 		x = 2 * (rand() / ((double) RAND_MAX + 1)) - 1;
@@ -721,22 +726,25 @@ int main(int argc, char **argv) {
 
     // Set random seed
     int rand_seed = 23;
-    if(rand_seed >= 0) {
-        printf("Using random seed: %d\n", rand_seed);
-        srand((unsigned int) rand_seed);
-    } else {
-        printf("Using current time as random seed...\n");
-        srand(time(NULL));
-    }
+    // if(rand_seed >= 0) {
+    printf("Using random seed: %d\n", rand_seed);
+    srand((unsigned int) rand_seed);
+    // } else {
+    //     printf("Using current time as random seed...\n");
+    //     srand(time(NULL));
+    // }
 
     // Define some variables
 	int D;
 	double *data = (double*) malloc(N * 784 * sizeof(double));
     double* Y = (double*) malloc(N * no_dims * sizeof(double));
-    double* costs = (double*) calloc(N, sizeof(double));
     if(data == NULL) { printf("[data] Memory allocation failed!\n"); exit(1); }
-    if(costs == NULL) { printf("[costs] Memory allocation failed!\n"); exit(1); }
     if(Y == NULL ) { printf("[Y] Memory allocation failed!\n"); exit(1); }
+
+    // Randomly intialize Y array
+    for (int i = 0; i < N * no_dims; i++) {
+        Y[i] = randn() * .0001;
+    }
 
     // Read the parameters and the dataset
     bool success = load_data(data, N, &D, data_file);
@@ -750,11 +758,11 @@ int main(int argc, char **argv) {
     myInt64 start;
     start = start_tsc();
 #endif
-    int num_runs = NUM_RUNS;
+    int num_runs = (DEBUG == 1) ? 1 : NUM_RUNS;
 
     for (int i = 0; i < num_runs; i++) {
         // Run t-SNE
-    	tsne->run(data, N, D, Y, no_dims, perplexity, theta, false, max_iter);
+    	tsne->run(data, N, D, Y, no_dims, perplexity, theta, max_iter);
     }
 
 #ifdef BENCHMARK
@@ -762,11 +770,10 @@ int main(int argc, char **argv) {
     printf("RDTSC instruction:\n%lf cycles measured\n", cycles);
 #endif
 	// Save the results
-	save_data(Y, costs, N, no_dims, result_file);
+	save_data(Y, N, no_dims, result_file);
 
     // Clean up the memory
 	free(data);   data = NULL;
 	free(Y);      Y = NULL;
-	free(costs);  costs = NULL;
     delete(tsne);
 }

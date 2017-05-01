@@ -75,7 +75,7 @@ bool load_data(double* data, int n, int* d, char* data_file) {
 }
 
 // Function that saves map to a t-SNE file
-void save_data(double* data, double* costs, int n, int d, char* data_file) {
+void save_data(double* data, int n, int d, char* data_file) {
 
 	// Open file, write first 2 integers and then the data
 	FILE *h;
@@ -86,7 +86,6 @@ void save_data(double* data, double* costs, int n, int d, char* data_file) {
 	fwrite(&n, sizeof(int), 1, h);
 	fwrite(&d, sizeof(int), 1, h);
     fwrite(data, sizeof(double), n * d, h);
-    fwrite(costs, sizeof(double), n, h);
     fclose(h);
 	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
 }

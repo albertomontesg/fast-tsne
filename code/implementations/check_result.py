@@ -12,19 +12,21 @@ def read_results(file_name):
     with open(file_name, 'rb') as fil:
         N, D = struct.unpack('II', fil.read(8))
         print("N={}\tD={}".format(N, D))
-        Y = np.array(struct.unpack("{}d".format(N*D), fil.read(8*N*D)))
+        Y = np.array(struct.unpack("{}d".format(N * D), fil.read(8 * N * D)))
         Y = Y.reshape(N, D)
-        costs = np.array(struct.unpack("{}d".format(N), fil.read(8*N)))
-    return Y, costs
+    return Y
+
 
 def read_labels(file_name):
     """ Read labels file from MNIST dataset
     """
     with open(file_name, 'rb') as fil:
         magic_number, N = struct.unpack('>II', fil.read(8))
-        assert magic_number == 2049, "magic number is not 2049, {} found".format(magic_number)
+        assert magic_number == 2049, "magic number is not 2049, {} found".format(
+            magic_number)
         labels = np.array(struct.unpack("{}B".format(N), fil.read(N)))
     return labels
+
 
 def plot_embedding(X, labels, title=None, pad=.03, save_fig=None):
     """ Plot the 2D embeddings
@@ -34,9 +36,13 @@ def plot_embedding(X, labels, title=None, pad=.03, save_fig=None):
 
     plt.figure(figsize=(15, 10), dpi=300)
     for i in range(X.shape[0]):
-        plt.text(X[i, 0], X[i, 1], str(labels[i]),
-                 color=plt.cm.Set1(labels[i] / 10.),
-                 fontdict={'weight': 'bold', 'size': 10})
+        plt.text(
+            X[i, 0],
+            X[i, 1],
+            str(labels[i]),
+            color=plt.cm.Set1(labels[i] / 10.),
+            fontdict={'weight': 'bold',
+                      'size': 10})
 
     plt.xticks([])
     plt.yticks([])
@@ -48,8 +54,12 @@ def plot_embedding(X, labels, title=None, pad=.03, save_fig=None):
         plt.savefig(save_fig, bbox_inches='tight')
     plt.show()
 
-if __name__ == '__main__':
-    Y, _ = read_results('./original/result.dat')
-    labels = read_labels('../data/mnist/train-labels.idx1-ubyte')
 
-    plot_embedding(Y, labels)
+if __name__ == '__main__':
+    Y = read_results('./original/result.dat')
+    labels = read_labels('../../data/mnist/train-labels.idx1-ubyte')
+    plot_embedding(Y, labels, save_fig="original.png")
+
+    Y = read_results('./naive_tsne/result.dat')
+    labels = read_labels('../../data/mnist/train-labels.idx1-ubyte')
+    plot_embedding(Y, labels, save_fig="naive_tsne.png")
