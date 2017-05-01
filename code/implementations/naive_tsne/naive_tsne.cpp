@@ -7,8 +7,8 @@
 
 
 #define DEBUG 1
-#define COUNTING 0
-#define NUMERIC_CHECK 1
+#define COUNTING 1
+#define NUMERIC_CHECK 0
 #define BENCHMARK 0
 #define NUM_RUNS 1
 
@@ -24,6 +24,8 @@
 #undef NUM_RUNS
 #define NUM_RUNS 1
 #endif
+
+int ITERS = 0;
 
 static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
@@ -85,7 +87,8 @@ void compute_squared_euclidean_distance(double* X, int N, int D, double* DD) {
         for(int m = n + 1; m < N; ++m, XmD+=D, curr_elem_sym+=N) {
             *(++curr_elem) = 0.0;
             for(int d = 0; d < D; ++d) {
-                *curr_elem += (XnD[d] - XmD[d]) * (XnD[d] - XmD[d]);
+				double dist = (XnD[d] - XmD[d]);
+                *curr_elem += dist * dist;
             }
             *curr_elem_sym = *curr_elem;
         }
@@ -146,10 +149,18 @@ void compute_pairwise_affinity_perplexity(double* X, int N, int D, double* P,
 			// Update iteration counter
 			iter++;
 		}
+		#if COUNTING
+		ITERS += iter;
+		#endif
+
 		// Row normalize P
 		for(int m = 0; m < N; m++) P[nN + m] /= sum_P;
 		nN += N;
 	}
+
+	#if COUNTING
+	printf("%d\n", ITERS);
+	#endif
 
 }
 
@@ -221,10 +232,10 @@ void gradient_computation(double* Y, double* P, double* Q, double sum_Q, int N,
 void gradient_update(double* Y, double* dC, double* uY, double* gains, int N,
 					 int no_dims, double momentum, double eta){
 	// Update gains
-	for(int i = 0; i < N * no_dims; i++)
-		gains[i] = (sign(dC[i]) != sign(uY[i])) ? (gains[i] + .2) :
-												  (gains[i] * .8);
-	for(int i = 0; i < N * no_dims; i++) if(gains[i] < .01) gains[i] = .01;
+	// for(int i = 0; i < N * no_dims; i++)
+	// 	gains[i] = (sign(dC[i]) != sign(uY[i])) ? (gains[i] + .2) :
+	// 											  (gains[i] * .8);
+	// for(int i = 0; i < N * no_dims; i++) if(gains[i] < .01) gains[i] = .01;
 
 	// Perform gradient update (with momentum and gains)
 	for(int i = 0; i < N * no_dims; i++)
