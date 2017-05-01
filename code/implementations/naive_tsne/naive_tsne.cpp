@@ -8,8 +8,8 @@
 
 #define DEBUG 1
 #define COUNTING 0
-#define NUMERIC_CHECK 0
-#define BENCHMARK 1
+#define NUMERIC_CHECK 1
+#define BENCHMARK 0
 #define NUM_RUNS 1
 
 // Avoid any other task while benchmarking
@@ -110,13 +110,13 @@ void compute_pairwise_affinity_perplexity(double* X, int N, int D, double* P,
 		double sum_P;
 
 		int iter = 0;
-		while (!found && iter < 50) {
+		while (!found && iter < 200) {
 			// Compute Gaussian kernel row
-			for (int m = 0; m < N; m++) P[nN + m] = expf(-beta * DD[nN + m]);
-			P[nN + n] = 0.;
+			for (int m = 0; m < N; m++) P[nN + m] = exp(-beta * DD[nN + m]);
+			P[nN + n] = DBL_MIN;
 
 			// Compute entropy of current row
-			sum_P = 0.;
+			sum_P = DBL_MIN;
 			for (int m = 0; m < N; m++) sum_P += P[nN + m];
 			double H = 0.0;
 			for(int m = 0; m < N; m++) H += beta * (DD[nN + m] * P[nN + m]);
@@ -143,6 +143,8 @@ void compute_pairwise_affinity_perplexity(double* X, int N, int D, double* P,
 						beta = (beta + min_beta) / 2.0;
 				}
 			}
+			// Update iteration counter
+			iter++;
 		}
 		// Row normalize P
 		for(int m = 0; m < N; m++) P[nN + m] /= sum_P;
@@ -259,6 +261,9 @@ double run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	cycles_normalize = stop_tsc(start_normalize);
 	cycles += (double) cycles_normalize;
 	#endif
+	#if NUMERIC_CHECK
+	save_data(X, N, D, "./datum/X_normalized");
+	#endif
 	free(mean); mean = NULL;
 
 
@@ -279,6 +284,9 @@ double run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	cycles += cycles_perplexity;
 	#endif
 	// P and DD will not be remove because future use
+	#if NUMERIC_CHECK
+	save_data(P, N, N, "./datum/P");
+	#endif
 
 
 	// Symmetrize affinities
@@ -292,10 +300,13 @@ double run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	cycles_symmetrize = stop_tsc(start_symmetrize);
 	cycles += cycles_symmetrize;
 	#endif
+	#if NUMERIC_CHECK
+	save_data(P, N, N, "./datum/P_sym");
+	#endif
 
 
 	// Early exageration
-	for(int i = 0; i < N * N; i++)        P[i] *= 12.0;
+	for(int i = 0; i < N * N; i++) P[i] *= 12.0;
 
 	// Initialize Q low dimensionality affinity matrix and gradient dC
 	double* Q = (double*) malloc(N * N * sizeof(double));
@@ -330,11 +341,16 @@ double run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		#if BENCHMARK
 		cycles_ld_affinity += stop_tsc(start_ld_affinity);
 		#endif
+		#if NUMERIC_CHECK
+		if (iter == 0) printf("%lf\n", sum_Q);
+		if (iter == 0) save_data(Q, N, N, "./datum/Q_0");
+		if (iter == 300) save_data(Q, N, N, "./datum/Q_300");
+		#endif
 
 
 		// Gradient Computation
 		// Make sure the gradient contains all zeros
-		for (int i = 0; i < N * N; i++) DD[i] = 0.;
+		for (int i = 0; i < N * no_dims; i++) dC[i] = 0.;
 		#if BENCHMARK
 		start_gradient = start_tsc();
 		#endif
@@ -343,6 +359,10 @@ double run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		// End compute
 		#if BENCHMARK
 		cycles_gradient += stop_tsc(start_gradient);
+		#endif
+		#if NUMERIC_CHECK
+		if (iter == 0) save_data(dC, N, no_dims, "./datum/dC_0");
+		if (iter == 300) save_data(dC, N, no_dims, "./datum/dC_300");
 		#endif
 
 
@@ -356,12 +376,20 @@ double run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		#if BENCHMARK
 		cycles_update += stop_tsc(start_update);
 		#endif
+		#if NUMERIC_CHECK
+		if (iter == 0) save_data(Y, N, no_dims, "./datum/Y_0");
+		if (iter == 300) save_data(Y, N, no_dims, "./datum/Y_300");
+		#endif
 
 		// Zero mean to solution Y
 		for (int i = 0; i < no_dims; i++) mean[i] = 0.;
 		// Compute
 		normalize(Y, N, no_dims, mean, false);
 		// End compute
+		#if NUMERIC_CHECK
+		if (iter == 0) save_data(Y, N, no_dims, "./datum/Y_0_normalized");
+		if (iter == 300) save_data(Y, N, no_dims, "./datum/Y_300_normalized");
+		#endif
 
 		// Stop early exageration
 		if (iter == 250) for (int i = 0; i < N * N; i++) { P[i] /= 12.0; }
@@ -429,6 +457,10 @@ int main(int argc, char **argv) {
     for (int i = 0; i < N * no_dims; i++) {
         Y[i] = randn() * .0001;
     }
+
+	#if NUMERIC_CHECK
+	save_data(Y, N, no_dims, "./datum/Y");
+	#endif
 
 	// Read the parameters and the dataset
     bool success = load_data(data, N, &D, data_file);

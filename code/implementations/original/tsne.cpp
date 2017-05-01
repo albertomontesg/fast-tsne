@@ -47,7 +47,7 @@
 
 #define DEBUG 1
 #define COUNTING 0
-#define NUMERIC_CHECK 0
+#define NUMERIC_CHECK 1
 #define BENCHMARK 0
 #define NUM_RUNS 1
 
@@ -97,10 +97,10 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims,
     for(int i = 0; i < N * no_dims; i++)    uY[i] =  .0;
     for(int i = 0; i < N * no_dims; i++) gains[i] = 1.0;
 
-#if DEBUG == 1
+    #if DEBUG == 1
     printf("Computing input similarities...\n");
     start = clock();
-#endif
+    #endif
 
     // Normalize input data (to prevent numerical problems)
     zeroMean(X, N, D);
@@ -110,6 +110,10 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims,
     }
     for(int i = 0; i < N * D; i++) X[i] /= max_X;
 
+    #if NUMERIC_CHECK
+    save_data(X, N, D, "./datum/X_normalized");
+    #endif
+
     // Compute input similarities for exact t-SNE
     double* P; unsigned int* row_P; unsigned int* col_P; double* val_P;
     if(exact) {
@@ -118,6 +122,10 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims,
         P = (double*) malloc(N * N * sizeof(double));
         if(P == NULL) { printf("[P] Memory allocation failed!\n"); exit(1); }
         computeGaussianPerplexity(X, N, D, P, perplexity);
+
+        #if NUMERIC_CHECK
+    	save_data(P, N, N, "./datum/P");
+    	#endif
 
         // Symmetrize input similarities
 #if DEBUG == 1
@@ -153,6 +161,9 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims,
 #if DEBUG == 1
     end = clock();
 #endif
+    #if NUMERIC_CHECK
+    save_data(P, N, N, "./datum/P_sym");
+    #endif
 
     // Lie about the P-values
     if(exact) { for(int i = 0; i < N * N; i++)        P[i] *= 12.0; }
@@ -168,8 +179,13 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims,
 	for(int iter = 0; iter < max_iter; iter++) {
 
         // Compute (approximate) gradient
-        if(exact) computeExactGradient(P, Y, N, no_dims, dY);
+        if(exact) computeExactGradient(P, Y, N, no_dims, dY, iter);
         else computeGradient(P, row_P, col_P, val_P, Y, N, no_dims, dY, theta);
+
+        #if NUMERIC_CHECK
+        if (iter == 0) save_data(dY, N, no_dims, "./datum/dC_0");
+        if (iter == 300) save_data(dY, N, no_dims, "./datum/dC_300");
+        #endif
 
         // Update gains
         for(int i = 0; i < N * no_dims; i++) gains[i] = (sign(dY[i]) != sign(uY[i])) ? (gains[i] + .2) : (gains[i] * .8);
@@ -179,8 +195,18 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims,
         for(int i = 0; i < N * no_dims; i++) uY[i] = momentum * uY[i] - eta * gains[i] * dY[i];
 		for(int i = 0; i < N * no_dims; i++)  Y[i] = Y[i] + uY[i];
 
+        #if NUMERIC_CHECK
+		if (iter == 0) save_data(Y, N, no_dims, "./datum/Y_0");
+		if (iter == 300) save_data(Y, N, no_dims, "./datum/Y_300");
+		#endif
+
         // Make solution zero-mean
 		zeroMean(Y, N, no_dims);
+
+        #if NUMERIC_CHECK
+		if (iter == 0) save_data(Y, N, no_dims, "./datum/Y_0_normalized");
+		if (iter == 300) save_data(Y, N, no_dims, "./datum/Y_300_normalized");
+		#endif
 
         // Stop lying about the P-values after a while, and switch momentum
         if(iter == stop_lying_iter) {
@@ -251,7 +277,7 @@ void TSNE::computeGradient(double* P, unsigned int* inp_row_P, unsigned int* inp
 }
 
 // Compute gradient of the t-SNE cost function (exact)
-void TSNE::computeExactGradient(double* P, double* Y, int N, int D, double* dC) {
+void TSNE::computeExactGradient(double* P, double* Y, int N, int D, double* dC, int iter) {
 
 	// Make sure the current gradient contains zeros
 	for(int i = 0; i < N * D; i++) dC[i] = 0.0;
@@ -275,6 +301,11 @@ void TSNE::computeExactGradient(double* P, double* Y, int N, int D, double* dC) 
         }
         nN += N;
     }
+    #if NUMERIC_CHECK
+    if (iter == 0) printf("%lf\n", sum_Q);
+    if (iter == 0) save_data(Q, N, N, "./datum/Q_0");
+    if (iter == 300) save_data(Q, N, N, "./datum/Q_300");
+    #endif
 
 	// Perform the computation of the gradient
     nN = 0;
@@ -726,13 +757,8 @@ int main(int argc, char **argv) {
 
     // Set random seed
     int rand_seed = 23;
-    // if(rand_seed >= 0) {
     printf("Using random seed: %d\n", rand_seed);
     srand((unsigned int) rand_seed);
-    // } else {
-    //     printf("Using current time as random seed...\n");
-    //     srand(time(NULL));
-    // }
 
     // Define some variables
 	int D;
@@ -745,6 +771,10 @@ int main(int argc, char **argv) {
     for (int i = 0; i < N * no_dims; i++) {
         Y[i] = randn() * .0001;
     }
+
+    #if NUMERIC_CHECK
+	save_data(Y, N, no_dims, "./datum/Y");
+	#endif
 
     // Read the parameters and the dataset
     bool success = load_data(data, N, &D, data_file);

@@ -41,5 +41,8 @@ private
 # Data files
 *.dat
 
+# Python Notebook
+.ipynb_checkpoints
+
 # Resulting binary files
-bh_tsne
+datum
