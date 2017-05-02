@@ -51,8 +51,9 @@ From now on all the computations are done at every iteration so should be counte
 `div = N * (N-1)`;
 
 * `gradient_update`:
-`add = N * d * 2`;
+`add = N * d * 2 + N*d`;
 `mult = N * d * 3`;
+From gains, all the operations are counted as multiplications.
 
 * `normalize`:
 `add = 2 * N * d`;
