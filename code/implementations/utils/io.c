@@ -30,7 +30,9 @@ bool load_data(double* data, int n, int* d, char* data_file) {
     }
     fread(&origN, sizeof(uint32_t), 1, h);
     origN = reverse_int(origN);
+    #ifdef DEBUG
     printf("Number of samples available: %d\n", origN);
+    #endif
     if (n > origN) {
         printf("N can not be larger than the number of samples in the data file (%d)\n", origN);
         return false;
@@ -41,14 +43,12 @@ bool load_data(double* data, int n, int* d, char* data_file) {
     rows = reverse_int(rows);
     cols = reverse_int(cols);
     *d = rows * cols;
-    printf("D = %d\n", *d);
 
     // Read the data
-    unsigned char *raw_data;
-    // *data = (double*) malloc(*d * n * sizeof(double));
-    raw_data = (unsigned char*) malloc(*d * n * sizeof(uint8_t));
+    unsigned char* raw_data = (unsigned char*) malloc(*d * n * sizeof(uint8_t));
     if(data == NULL) { printf("[data] Memory allocation failed!\n"); exit(1); }
     if(raw_data == NULL) { printf("[raw_data] Memory allocation failed!\n"); exit(1); }
+
     // Read raw data into unsigned char vector
     fread(raw_data, sizeof(uint8_t), n * *d, h);
 
@@ -70,14 +70,15 @@ bool load_data(double* data, int n, int* d, char* data_file) {
             printf("\n");
         }
     }
+
     free(raw_data); raw_data = NULL;
     return true;
 }
 
-// Function that saves map to a t-SNE file
 void save_data(double* data, int n, int d, char* data_file) {
+    /* Function to save a matrix into a file, writing the size at the beginning
+    and then all the data values */
 
-	// Open file, write first 2 integers and then the data
 	FILE *h;
 	if((h = fopen(data_file, "w+b")) == NULL) {
 		printf("Error: could not open data file (%s).\n", data_file);
@@ -87,21 +88,7 @@ void save_data(double* data, int n, int d, char* data_file) {
 	fwrite(&d, sizeof(int), 1, h);
     fwrite(data, sizeof(double), n * d, h);
     fclose(h);
+    #ifdef DEBUG
 	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
-}
-
-void save_numeric_data(double* data, int N, char* data_file) {
-    /* Function to save snapshots of numeric vectors and matrices to compare
-    with future implementations.
-    */
-    FILE *h;
-    if((h = fopen(data_file, "w+b")) == NULL) {
-		printf("Error: could not open numeric data file (%s).\n", data_file);
-		return;
-	}
-
-    fwrite(&N, sizeof(int), 1, h);
-    fwrite(data, sizeof(double), N, h);
-    fclose(h);
-    printf("Save numeric matrix at %s\n", data_file);
+    #endif
 }

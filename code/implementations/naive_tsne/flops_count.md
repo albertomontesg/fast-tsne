@@ -35,6 +35,7 @@ Now lets check function by function at each step:
 * `early_exageration`:
 `mult = N*N`;
 `div = N*N`;
+or `mult = 2 * N*N`;
 
 From now on all the computations are done at every iteration so should be counted `T` times.
 
