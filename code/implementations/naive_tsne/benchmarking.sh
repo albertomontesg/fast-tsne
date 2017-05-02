@@ -17,8 +17,8 @@ BIN_BENCH=tsne_bench.o
 
 TODAY=$(date +%Y%m%d_%H%M%S)
 
-COUNT_FILE="./benchmarking/$TODAY-iters.txt"
-BENCH_FILE="./benchmarking/$TODAY-cycles.txt"
+COUNT_FILE="./benchmarking/$TODAY@$COMPILER_FLAGS@iters.txt"
+BENCH_FILE="./benchmarking/$TODAY@$COMPILER_FLAGS@cycles.txt"
 
 # Input size range
 START=200

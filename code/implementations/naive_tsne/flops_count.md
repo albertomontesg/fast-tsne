@@ -18,18 +18,18 @@ Now lets check function by function at each step:
 
 * `compute_pairwise_affinity_perplexity`:
     * `compute_squared_euclidean_distance`:
-    `add = D * (N - 1)^2 / 2 * 2`;
-    `mult = D * (N - 1)^2 / 2`;
+    `add = D * N*(N-1)/2 * 2`;
+    `mult = D * N*(N-1)/2`;
     * Binary search for perplexity (depends on number of iterations `it` required to achieve the binary search):
-    `add = N * it * (N + N + 1 + 1)`;
-    `mult = N * it * (N + 2*M)`;
-    `div = N * it * (1 + 1) + N * N`;
-    `exp = N * it * (N)`;
-    `log = N * it * (1 + 1)`;
+    `add = it * (N + N + 1 + 1)`;
+    `mult = it * (N + 2*N)`;
+    `div = it * (1 + 1) + N * N`;
+    `exp = it * (N)`;
+    `log = it * (1 + 1)`;
     All the operations regarding the update of the `beta` value at the binary search it has been considered to perform at the final ifs the sum and the division as observing the resulting betas, the values are between 0 and 1.
 
 * `symmetrize_affinities`:
-`add = (N - 1)^2 / 2 + N*N`;
+`add = N*(N-1) / 2 + N*N`;
 `div = N*N`;
 
 * `early_exageration`:
@@ -41,8 +41,8 @@ From now on all the computations are done at every iteration so should be counte
 
 * `compute_low_dimensional_affinities`:
     * `compute_squared_euclidean_distance`:
-    `add = d * (N - 1)^2 / 2 * 2`;
-    `mult = d * (N - 1)^2 / 2`;
+    `add = d * N*(N-1)/2 * 2`;
+    `mult = d * N*(N-1)/2`;
     * `add = N * (N-1) * 2`; `div = N * (N-1)`;
 
 * `gradient_computation`:
