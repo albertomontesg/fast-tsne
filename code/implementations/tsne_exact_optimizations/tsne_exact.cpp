@@ -20,9 +20,6 @@ myInt64 start_early_exageration, start_ld_affinity;
 myInt64 start_gradient, start_update, start_normalize_2;
 #endif
 
-int ITERS = 0;
-
-
 // Generates a Gaussian random number
 double randn() {
 	double x, y, radius;

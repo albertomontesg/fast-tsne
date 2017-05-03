@@ -1,8 +1,13 @@
+#include <stdio.h>
 #include "comp.h"
 
 // Compute pairwise affinity perplexity
 void compute_pairwise_affinity_perplexity(double* X, int N, int D, double* P,
 										  double perplexity, double* DD){
+
+	#ifdef COUNTING
+	int ITERS = 0;
+	#endif
 
 	compute_squared_euclidean_distance(X, N, D, DD);
 

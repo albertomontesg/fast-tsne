@@ -11,7 +11,7 @@ DATA_FILE="../../../data/mnist/train-images.idx3-ubyte"
 
 CC=g++-6
 COMPILER_FLAGS="-O3 -march=native"
-SRC="naive_tsne.cpp ../utils/io.c"
+SRC="tsne_exact.cpp ../utils/io.c ./computations/normalize.c ./computations/compute_squared_euclidean_distance.c ./computations/compute_pairwise_affinity_perplexity.c ./computations/symmetrize_affinities.c ./computations/early_exageration.c ./computations/compute_low_dimensional_affinities.c ./computations/gradient_computation.c ./computations/gradient_update.c"
 BIN=tsne.o
 BIN_COUNT=tsne_count.o
 BIN_BENCH=tsne_bench.o
@@ -40,8 +40,8 @@ case $MODE in
         $CC -DCOUNTING $COMPILER_FLAGS $SRC -o $BIN_COUNT;
         $CC -DBENCHMARK $COMPILER_FLAGS $SRC -o $BIN_BENCH;
         # Create the files to store the
-        touch $COUNT_FILE
-        touch $BENCH_FILE
+        touch "$COUNT_FILE"
+        touch "$BENCH_FILE"
         for N in $(seq $START $INTERVAL $STOP); do
             printf "$N";
             ./$BIN_COUNT $DATA_FILE result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> $COUNT_FILE;
@@ -52,12 +52,3 @@ case $MODE in
     *)
         ;;
 esac
-
-
-if [[ $TIMING == 1 ]]; then
-    $CC $COMPILER_FLAGS $SRC -o $BIN;
-    for N in $(seq $START $INTERVAL $STOP); do
-        echo "/n/nN: $N";
-        time ./$BIN ../../../data/mnist/train-images.idx3-ubyte result.dat $N 50 2 1000;
-    done;
-fi
