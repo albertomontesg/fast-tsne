@@ -1,9 +1,18 @@
 #include <stdio.h>
 #include "comp.h"
 
+#ifdef SINGLE_PRECISION
+float MAX_VAL = FLT_MAX;
+float MIN_VAL = FLT_MIN;
+#else
+double MAX_VAL = DBL_MAX;
+double MIN_VAL = DBL_MIN;
+#endif
+
+
 // Compute pairwise affinity perplexity
-void compute_pairwise_affinity_perplexity(double* X, int N, int D, double* P,
-										  double perplexity, double* DD){
+void compute_pairwise_affinity_perplexity(dt* X, int N, int D, dt* P,
+										  dt perplexity, dt* DD){
 
 	#ifdef COUNTING
 	int ITERS = 0;
@@ -15,41 +24,41 @@ void compute_pairwise_affinity_perplexity(double* X, int N, int D, double* P,
 	int nN = 0;
 	for (int n = 0; n < N; n++) {
 		int found = 0;
-		double beta = 1.0;
-		double min_beta = -DBL_MAX;
-		double max_beta =  DBL_MIN;
-		double tol = 1e-5;
-		double sum_P;
+		dt beta = 1.0;
+        dt min_beta = -MAX_VAL;
+        dt max_beta =  MAX_VAL;
+		dt tol = 1e-5;
+		dt sum_P;
 
 		int iter = 0;
 		while (found == 0 && iter < 200) {
 			// Compute Gaussian kernel row
-			for (int m = 0; m < N; m++) P[nN + m] = exp(-beta * DD[nN + m]);
-			P[nN + n] = DBL_MIN;
+			for (int m = 0; m < N; m++) P[nN + m] = exp_c(-beta * DD[nN + m]);
+			P[nN + n] = MIN_VAL;
 
 			// Compute entropy of current row
-			sum_P = DBL_MIN;
+			sum_P = MIN_VAL;
 			for (int m = 0; m < N; m++) sum_P += P[nN + m];
-			double H = 0.0;
+			dt H = 0.0;
 			for(int m = 0; m < N; m++) H += beta * (DD[nN + m] * P[nN + m]);
-			H = (H / sum_P) + log(sum_P);
+			H = (H / sum_P) + log_c(sum_P);
 
 			// Evaluate whether the entropy is within the tolerance level
-			double Hdiff = H - log(perplexity);
+			dt Hdiff = H - log_c(perplexity);
 			if(Hdiff < tol && -Hdiff < tol) {
 				found = 1;
 			}
 			else {
 				if(Hdiff > 0) {
 					min_beta = beta;
-					if(max_beta == DBL_MAX || max_beta == -DBL_MAX)
+					if(max_beta == MAX_VAL || max_beta == -MAX_VAL)
 						beta *= 2.0;
 					else
 						beta = (beta + max_beta) / 2.0;
 				}
 				else {
 					max_beta = beta;
-					if(min_beta == -DBL_MAX || min_beta == DBL_MAX)
+					if(min_beta == -MAX_VAL || min_beta == MAX_VAL)
 						beta /= 2.0;
 					else
 						beta = (beta + min_beta) / 2.0;

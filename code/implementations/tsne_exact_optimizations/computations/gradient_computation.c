@@ -1,8 +1,8 @@
 #include "comp.h"
 
 // Gradient computation dC_dy
-void gradient_computation(double* Y, double* P, double* Q, double sum_Q, int N,
-						  int D, double* dC) {
+void gradient_computation(dt* Y, dt* P, dt* Q, dt sum_Q, int N,
+						  int D, dt* dC) {
 	// Perform the computation of the gradient
 	int nN = 0;
 	int nD = 0;
@@ -10,7 +10,7 @@ void gradient_computation(double* Y, double* P, double* Q, double sum_Q, int N,
 		int mD = 0;
 		for(int m = 0; m < N; m++) {
 			if(n != m) {
-				double mult = (P[nN + m] - (Q[nN + m] / sum_Q)) * Q[nN + m];
+				dt mult = (P[nN + m] - (Q[nN + m] / sum_Q)) * Q[nN + m];
 				for(int d = 0; d < D; d++) {
 					dC[nD + d] += (Y[nD + d] - Y[mD + d]) * mult;
 				}
