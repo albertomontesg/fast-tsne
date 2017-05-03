@@ -82,8 +82,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	#endif
 	// P and DD will not be remove because future use
 	#ifdef NUMERIC_CHECK
-	//TODO save and verify val_P
-	// save_data(P, N, N, "./datum/P");
+	save_csr_data(row_P, col_P, val_P, N, N, "./datum/P");
 	#endif
 
 
@@ -98,8 +97,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	cycles_symmetrize += (double) stop_tsc(start_symmetrize);
 	#endif
 	#ifdef NUMERIC_CHECK
-	//TODO save and verify val_P
-	// save_data(P, N, N, "./datum/P");
+	save_csr_data(row_P, col_P, val_P, N, N, "./datum/P");
 	#endif
 
 
