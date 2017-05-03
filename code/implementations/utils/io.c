@@ -14,12 +14,12 @@ bool load_data(double* data, int n, int* d, char* data_file) {
 
 
 
-	// Open file, read first 2 integers, allocate memory, and read the data
+    // Open file, read first 2 integers, allocate memory, and read the data
     FILE *h;
-	if((h = fopen(data_file, "r+b")) == NULL) {
-		printf("Error: could not open data file.\n");
-		return false;
-	}
+    if((h = fopen(data_file, "r+b")) == NULL) {
+        printf("Error: could not open data file.\n");
+        return false;
+    }
 
     int magic_number, origN, rows, cols;
     fread(&magic_number, sizeof(int), 1, h);
@@ -62,7 +62,7 @@ bool load_data(double* data, int n, int* d, char* data_file) {
         printf("Sample %d\n\n", offset+1);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                double v = data[offset *d + i*cols+j];
+                double v = data[offset * *d + i*cols+j];
                 if (v > 0.)
                     printf("\x1B[31m %.2f \x1B[0m\t", v);
                 else printf("%.2f\t", v);
@@ -79,24 +79,24 @@ void save_data(double* data, int n, int d, char* data_file) {
     /* Function to save a matrix into a file, writing the size at the beginning
     and then all the data values */
 
-	FILE *h;
-	if((h = fopen(data_file, "w+b")) == NULL) {
-		printf("Error: could not open data file (%s).\n", data_file);
-		return;
-	}
-	fwrite(&n, sizeof(int), 1, h);
-	fwrite(&d, sizeof(int), 1, h);
+    FILE *h;
+    if((h = fopen(data_file, "w+b")) == NULL) {
+        printf("Error: could not open data file (%s).\n", data_file);
+        return;
+    }
+    fwrite(&n, sizeof(int), 1, h);
+    fwrite(&d, sizeof(int), 1, h);
     fwrite(data, sizeof(double), n * d, h);
     fclose(h);
     #ifdef DEBUG
-	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
+    printf("Wrote the %i x %i data matrix successfully!\n", n, d);
     #endif
 }
 
 void csr_to_dense(size_t* data_row, size_t* data_col, double* data_value, double* data,
                   size_t N, size_t M)
 {
-    data = calloc(N * D, sizeof(double));
+    data = (double *) calloc(N * M, sizeof(double));
     for (size_t i = 0; i < N; ++i)
     {
         for (size_t j = data_row[i]; j < data_row[i+1]; ++j)
@@ -110,8 +110,9 @@ void csr_to_dense(size_t* data_row, size_t* data_col, double* data_value, double
  * @brief      Convertes a CSR matrix to dense and then stores it.
  */
 void save_csr_data(size_t* data_row, size_t* data_col, double* data_value, int n, int d, char* data_file)
-    double * data = NULL;
-    csr_to_dense(data_row, data_col, data_value, data, n, d)
+{
+    double *data = NULL;
+    csr_to_dense(data_row, data_col, data_value, data, n, d);
     save_data(data, n, d, data_file);
     free(data);
 }
