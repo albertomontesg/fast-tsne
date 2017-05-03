@@ -10,8 +10,12 @@ void compute_squared_euclidean_distance(double* X, int N, int D, double* DD);
 // Compute pairwise affinity perplexity
 void compute_pairwise_affinity_perplexity(double* X, int N, int D, double* P,
 										  double perplexity, double* DD);
+void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double* val_P,
+										  unsigned int* row_P, unsigned int* col_P,
+										  double perplexity, unsigned int K);
 // Symmetrize pairwise affinities P_ij
 void symmetrize_affinities(double* P, int N);
+void symmetrize_affinities_nlogn(unsigned int* row_P, unsigned int* col_P, double* val_P, int N);
 // Early exageration (Multiply all the values of P to the given value)
 void early_exageration(double* P, int N, double scale);
 // Compute low dimensional affinities

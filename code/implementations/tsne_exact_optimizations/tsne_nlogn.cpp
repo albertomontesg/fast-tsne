@@ -91,13 +91,14 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	start_symmetrize = start_tsc();
 	#endif
 	// Compute
-	symmetrize_affinities(P, N);
+	symmetrize_affinities_nlogn(row_P, col_P, val_P, N);
 	// End compute
 	#ifdef BENCHMARK
 	cycles_symmetrize += (double) stop_tsc(start_symmetrize);
 	#endif
 	#ifdef NUMERIC_CHECK
-	save_data(P, N, N, "./datum/P_sym");
+	//TODO save and verify val_P
+	// save_data(P, N, N, "./datum/P");
 	#endif
 
 
