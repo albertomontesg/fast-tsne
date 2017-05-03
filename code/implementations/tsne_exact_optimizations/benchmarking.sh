@@ -1,6 +1,7 @@
 #!/usr/bin/shell
 
 MODE="benchmark"
+BENCHMARK="data_type"
 NOTE=""
 
 # Algorithms parameters
@@ -28,10 +29,11 @@ TODAY=$(date +%Y%m%d_%H%M%S)
 
 COUNT_FILE="./benchmarking/$TODAY@$COMPILER_FLAGS@$NOTE@iters.txt"
 BENCH_FILE="./benchmarking/$TODAY@$COMPILER_FLAGS@$NOTE@cycles.txt"
+FILE_PREFIX="./benchmarking/$TODAY@$COMPILER_FLAGS"
 
 # Input size range
 START=200
-STOP=4000
+STOP=3000
 INTERVAL=200
 
 case $MODE in
@@ -45,17 +47,39 @@ case $MODE in
         done;
         ;;
     "benchmark")
-        $CC -DCOUNTING $COMPILER_FLAGS $SRC -o $BIN_COUNT;
-        $CC -DBENCHMARK $COMPILER_FLAGS $SRC -o $BIN_BENCH;
-        # Create the files to store the
-        # touch "$COUNT_FILE"
-        # touch "$BENCH_FILE"
-        for N in $(seq $START $INTERVAL $STOP); do
-            printf "$N";
-            ./$BIN_COUNT $DATA_FILE result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$COUNT_FILE";
-            ./$BIN_BENCH $DATA_FILE result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$BENCH_FILE";
-            printf " DONE\n"
-        done;
+        case $BENCHMARK in
+            "default")
+                $CC -DCOUNTING $COMPILER_FLAGS $SRC -o $BIN_COUNT;
+                $CC -DBENCHMARK $COMPILER_FLAGS $SRC -o $BIN_BENCH;
+                # Create the files to store the
+                # touch "$COUNT_FILE"
+                # touch "$BENCH_FILE"
+                for N in $(seq $START $INTERVAL $STOP); do
+                    printf "$N";
+                    ./$BIN_COUNT $DATA_FILE result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$COUNT_FILE";
+                    ./$BIN_BENCH $DATA_FILE result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$BENCH_FILE";
+                    printf " DONE\n"
+                done;
+                ;;
+            "data_type")
+                $CC -DCOUNTING $COMPILER_FLAGS $SRC -o tsne_count_d.o
+                $CC -DCOUNTING -DSINGLE_PRECISION $COMPILER_FLAGS $SRC -o tsne_count_f.o
+                $CC -DBENCHMARK $COMPILER_FLAGS $SRC -o tsne_bench_d.o;
+                $CC -DBENCHMARK -DSINGLE_PRECISION $COMPILER_FLAGS $SRC -o tsne_bench_f.o;
+
+                for N in $(seq $START $INTERVAL $STOP); do
+                    printf "$N ";
+                    ./tsne_count_d.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@double@iters.txt"
+                    printf "."
+                    ./tsne_count_f.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@float@iters.txt"
+                    printf "."
+                    ./tsne_bench_d.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@double@cycles.txt"
+                    printf "."
+                    ./tsne_bench_f.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@float@cycles.txt"
+                    printf " DONE\n"
+                done;
+                ;;
+        esac
         ;;
     *)
         ;;
