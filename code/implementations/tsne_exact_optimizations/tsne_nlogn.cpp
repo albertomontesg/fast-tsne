@@ -61,20 +61,28 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	// for the best perplexity value
 	double* P = (double*) calloc(N * N, sizeof(double));
 	double* DD = (double*) malloc(N * N * sizeof(double));
+	unsigned int *_row_P = (unsigned int*)    malloc((N + 1) * sizeof(unsigned int));
+    unsigned int *_col_P = (unsigned int*)    calloc(N * K, sizeof(unsigned int));
+    double *_val_P = (double*) calloc(N * K, sizeof(double));
+
 	if(P == NULL) { printf("[P] Memory allocation failed!\n"); exit(1); }
 	if(DD == NULL) { printf("[DD] Memory allocation failed!\n"); exit(1); }
 	#ifdef BENCHMARK
 	start_perplexity = start_tsc();
 	#endif
 	// Compute
-	compute_pairwise_affinity_perplexity(X, N, D, P, perplexity, DD);
+	compute_pairwise_affinity_perplexity_nlogn(X, N, D,
+									     val_P, row_P, col_P,
+									     perplexity,
+									     (unsigned int) (3 * perplexity));
 	// End compute
 	#ifdef BENCHMARK
 	cycles_perplexity += (double) stop_tsc(start_perplexity);
 	#endif
 	// P and DD will not be remove because future use
 	#ifdef NUMERIC_CHECK
-	save_data(P, N, N, "./datum/P");
+	//TODO save and verify val_P
+	// save_data(P, N, N, "./datum/P");
 	#endif
 
 
