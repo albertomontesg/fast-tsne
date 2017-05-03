@@ -1,7 +1,6 @@
 CC=g++-6
 CFLAGS=-O3 -march=native
-SRC=tsne_exact.cpp# ../utils/io.c
- # ./computations/normalize.c ./computations/compute_squared_euclidean_distance.c ./computations/compute_pairwise_affinity_perplexity.c ./computations/symmetrize_affinities.c ./computations/early_exageration.c ./computations/compute_low_dimensional_affinities.c ./computations/gradient_computation.c ./computations/gradient_update.c
+SRC=tsne_exact.cpp
 BIN_DOUBLE=tsned.o
 BIN_FLOAT=tsnef.o
 

@@ -20,7 +20,7 @@ fi
 $CC --version
 
 COMPILER_FLAGS="-O3 -march=native -std=c++11"
-SRC="tsne_exact.cpp ../utils/io.c ./computations/normalize.c ./computations/compute_squared_euclidean_distance.c ./computations/compute_pairwise_affinity_perplexity.c ./computations/symmetrize_affinities.c ./computations/early_exageration.c ./computations/compute_low_dimensional_affinities.c ./computations/gradient_computation.c ./computations/gradient_update.c"
+SRC="tsne_exact.cpp"
 BIN=tsne.o
 BIN_COUNT=tsne_count.o
 BIN_BENCH=tsne_bench.o
