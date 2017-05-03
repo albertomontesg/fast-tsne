@@ -1,5 +1,9 @@
+#ifndef COMPUTE_PAIRWISE_AFFINITY_PERPLEXITY
+#define COMPUTE_PAIRWISE_AFFINITY_PERPLEXITY
+
 #include <stdio.h>
-#include "comp.h"
+#include "../../utils/data_type.h"
+#include "compute_squared_euclidean_distance.h"
 
 #ifdef SINGLE_PRECISION
 float MAX_VAL = FLT_MAX;
@@ -11,7 +15,7 @@ double MIN_VAL = DBL_MIN;
 
 
 // Compute pairwise affinity perplexity
-void compute_pairwise_affinity_perplexity(dt* X, int N, int D, dt* P,
+inline void compute_pairwise_affinity_perplexity(dt* X, int N, int D, dt* P,
 										  dt perplexity, dt* DD){
 
 	#ifdef COUNTING
@@ -81,3 +85,5 @@ void compute_pairwise_affinity_perplexity(dt* X, int N, int D, dt* P,
 	#endif
 
 }
+
+#endif
