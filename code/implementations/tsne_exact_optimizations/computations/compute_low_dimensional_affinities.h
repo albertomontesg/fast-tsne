@@ -1,7 +1,11 @@
-#include "comp.h"
+#ifndef COMPUTE_LOW_DIMENSIONAL_AFFINITIES_H
+#define COMPUTE_LOW_DIMENSIONAL_AFFINITIES_H
+
+#include "../../utils/data_type.h"
+#include "compute_squared_euclidean_distance.h"
 
 // Compute low dimensional affinities
-dt compute_low_dimensional_affinities(dt* Y, int N, int no_dims,
+inline dt compute_low_dimensional_affinities(dt* Y, int N, int no_dims,
 										  dt* Q, dt* DD) {
 
 	compute_squared_euclidean_distance(Y, N, no_dims, DD);
@@ -20,3 +24,5 @@ dt compute_low_dimensional_affinities(dt* Y, int N, int no_dims,
 
 	return sum_Q;
 }
+
+#endif

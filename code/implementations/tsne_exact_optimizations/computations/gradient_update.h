@@ -1,9 +1,9 @@
-#include "comp.h"
+#include "../../utils/data_type.h"
 
 static inline dt sign(dt x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
 // Update gains and update Y with the computed gradient
-void gradient_update(dt* Y, dt* dC, dt* uY, dt* gains, int N,
+inline void gradient_update(dt* Y, dt* dC, dt* uY, dt* gains, int N,
 					 int no_dims, dt momentum, dt eta){
 	// Update gains
 	for(int i = 0; i < N * no_dims; i++)

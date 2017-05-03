@@ -46,3 +46,6 @@ private
 
 # Resulting binary files
 datum
+
+# Assembly code
+*.s

@@ -4,7 +4,15 @@
 #include <stdio.h>
 #include "../utils/io.h"
 #include "../utils/tsc_x86.h"
-#include "computations/comp.h"
+#include "../utils/random.h"
+#include "../utils/data_type.h"
+#include "computations/compute_low_dimensional_affinities.h"
+#include "computations/compute_pairwise_affinity_perplexity.h"
+#include "computations/early_exageration.h"
+#include "computations/gradient_computation.h"
+#include "computations/gradient_update.h"
+#include "computations/normalize.h"
+#include "computations/symmetrize_affinities.h"
 
 
 #define NUM_RUNS 1
@@ -19,19 +27,6 @@ myInt64 start_normalize, start_perplexity, start_symmetrize;
 myInt64 start_early_exageration, start_ld_affinity;
 myInt64 start_gradient, start_update, start_normalize_2;
 #endif
-
-// Generates a Gaussian random number
-dt randn() {
-	dt x, y, radius;
-	do {
-		x = 2 * (rand() / ((dt) RAND_MAX + 1)) - 1;
-		y = 2 * (rand() / ((dt) RAND_MAX + 1)) - 1;
-		radius = (x * x) + (y * y);
-	} while((radius >= 1.0) || (radius == 0.0));
-	radius = sqrt_c(-2 * log_c(radius) / radius);
-	x *= radius;
-	return x;
-}
 
 
 // Run function

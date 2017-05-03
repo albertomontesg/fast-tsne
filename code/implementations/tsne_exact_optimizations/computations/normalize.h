@@ -1,7 +1,10 @@
-#include "comp.h"
+#ifndef NORMALIZE_H
+#define NORMALIZE_H
+
+#include "../../utils/data_type.h"
 
 // Normalize X substracting mean and
-void normalize(dt* X, int N, int D, dt* mean, int max_value) {
+inline void normalize(dt* X, int N, int D, dt* mean, int max_value) {
 	int nD = 0;
 	for(int n = 0; n < N; n++) {
 		for(int d = 0; d < D; d++) {
@@ -31,3 +34,5 @@ void normalize(dt* X, int N, int D, dt* mean, int max_value) {
 	    for(int i = 0; i < N * D; i++) X[i] /= max_X;
 	}
 }
+
+#endif

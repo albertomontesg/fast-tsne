@@ -1,7 +1,10 @@
-#include "comp.h"
+#ifndef GRADIENT_COMPUTATION_H
+#define GRADIENT_COMPUTATION_H
+
+#include "../../utils/data_type.h"
 
 // Gradient computation dC_dy
-void gradient_computation(dt* Y, dt* P, dt* Q, dt sum_Q, int N,
+inline void gradient_computation(dt* Y, dt* P, dt* Q, dt sum_Q, int N,
 						  int D, dt* dC) {
 	// Perform the computation of the gradient
 	int nN = 0;
@@ -21,3 +24,5 @@ void gradient_computation(dt* Y, dt* P, dt* Q, dt sum_Q, int N,
 		nD += D;
 	}
 }
+
+#endif

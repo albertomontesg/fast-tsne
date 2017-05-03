@@ -1,7 +1,10 @@
-#include "comp.h"
+#ifndef COMPUTE_SQUARED_EUCLIDEAN_DISTANCE_H
+#define COMPUTE_SQUARED_EUCLIDEAN_DISTANCE_H
+
+#include "../../utils/data_type.h"
 
 // Compute squared euclidean disctance for all pairs of vectors X_i X_j
-void compute_squared_euclidean_distance(dt* X, int N, int D, dt* DD) {
+inline void compute_squared_euclidean_distance(dt* X, int N, int D, dt* DD) {
 	const dt* XnD = X;
     for(int n = 0; n < N; ++n, XnD += D) {
         const dt* XmD = XnD + D;
@@ -18,3 +21,5 @@ void compute_squared_euclidean_distance(dt* X, int N, int D, dt* DD) {
         }
     }
 }
+
+#endif
