@@ -1,18 +1,22 @@
 #include "comp.h"
 #include "../trees/sptree.h"
+#include "stdio.h"
+#include "stdlib.h"
 // Gradient computation dC_dy
-void gradient_computation(double* Y, double* row_P, double* col_P, double* val_p, int N,
-						  int D, double* dC) {
 
-	SPTree* tree = new SPTree(D, Y, N) // SPTree interface: (dimension, data, num_elements)
+void gradient_computation(double* Y, unsigned int* row_P, unsigned int* col_P, double* val_P, int N,
+						  int D, double* dC, double theta) {
+
+	SPTree* tree = new SPTree(D, Y, N); // SPTree interface: (dimension, data, num_elements)
 
 	// Perform the computation of the gradient
-	double sum_Q = .0;
+	double sum_Q = 0.0;
 	double* pos_f = (double*) calloc(N * D, sizeof(double));
 	double* neg_f = (double*) calloc(N * D, sizeof(double));
 	if(pos_f == NULL || neg_f == NULL) { printf("Memory allocation failed!\n"); exit(1); }
-	tree->computeEdgeForces(inp_row_P, inp_col_P, inp_val_P, N, pos_f);
-	for(int n = 0; n < N; n++) tree->computeNonEdgeForces(n, theta, neg_f + n * D, &sum_Q);
+	tree->computeEdgeForces(row_P, col_P, val_P, N, pos_f);
+	for(unsigned int n = 0; n < N; n++) tree->computeNonEdgeForces(n, theta, neg_f + n * D, &sum_Q);
+//    void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
 
 	// Compute final t-SNE gradient
 	for(int i = 0; i < N * D; i++) {

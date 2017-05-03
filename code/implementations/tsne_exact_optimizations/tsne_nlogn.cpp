@@ -35,7 +35,7 @@ double randn() {
 
 // Run function
 void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
-	 	 int max_iter) {
+	 	 int max_iter, double theta) {
 
 
 	// Normalize input X (substract mean and normalize to the maximum value
@@ -59,11 +59,12 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 
 	// Compute pairsiwe affinity with perplexity which include binary search
 	// for the best perplexity value
+	const unsigned int K = (unsigned int) (3 * perplexity);
 	double* P = (double*) calloc(N * N, sizeof(double));
 	double* DD = (double*) malloc(N * N * sizeof(double));
-	unsigned int *_row_P = (unsigned int*)    malloc((N + 1) * sizeof(unsigned int));
-    unsigned int *_col_P = (unsigned int*)    calloc(N * K, sizeof(unsigned int));
-    double *_val_P = (double*) calloc(N * K, sizeof(double));
+	unsigned int *row_P = (unsigned int*)    malloc((N + 1) * sizeof(unsigned int));
+    unsigned int *col_P = (unsigned int*)    calloc(N * K, sizeof(unsigned int));
+    double *val_P = (double*) calloc(N * K, sizeof(double));
 
 	if(P == NULL) { printf("[P] Memory allocation failed!\n"); exit(1); }
 	if(DD == NULL) { printf("[DD] Memory allocation failed!\n"); exit(1); }
@@ -165,7 +166,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		start_gradient = start_tsc();
 		#endif
 		// Compute
-		gradient_computation(Y, _row_P, _col_P, _val_P, Y, N, no_dims, dC);
+		gradient_computation(Y, row_P, col_P, val_P, Y, N, no_dims, dC, theta);
 		// End compute
 		#ifdef BENCHMARK
 		cycles_gradient += (double) stop_tsc(start_gradient);

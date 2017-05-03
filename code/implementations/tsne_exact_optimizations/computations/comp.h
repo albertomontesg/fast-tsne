@@ -22,8 +22,8 @@ void early_exageration(double* P, int N, double scale);
 double compute_low_dimensional_affinities(double* Y, int N, int no_dims,
 										  double* Q, double* DD);
 // Gradient computation dC_dy
-void gradient_computation(double* Y, double* P, double* Q, double sum_Q,
-						  int N, int D, double* dC);
+void gradient_computation(double* Y, unsigned int* row_P, unsigned int* col_P, double* val_p, int N,
+						  int D, double* dC, double theta);
 // Update gains and update Y with the computed gradient
 void gradient_update(double* Y, double* dC, double* uY, double* gains, int N,
 					 int no_dims, double momentum, double eta);
