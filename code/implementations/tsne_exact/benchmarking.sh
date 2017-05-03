@@ -52,12 +52,3 @@ case $MODE in
     *)
         ;;
 esac
-
-
-if [[ $TIMING == 1 ]]; then
-    $CC $COMPILER_FLAGS $SRC -o $BIN;
-    for N in $(seq $START $INTERVAL $STOP); do
-        echo "/n/nN: $N";
-        time ./$BIN ../../../data/mnist/train-images.idx3-ubyte result.dat $N 50 2 1000;
-    done;
-fi
