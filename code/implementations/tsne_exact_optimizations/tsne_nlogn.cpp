@@ -164,7 +164,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		start_gradient = start_tsc();
 		#endif
 		// Compute
-		gradient_computation(Y, row_P, col_P, val_P, Y, N, no_dims, dC, theta);
+		gradient_computation(Y, row_P, col_P, val_P, N, D, dC, theta);
 		// End compute
 		#ifdef BENCHMARK
 		cycles_gradient += (double) stop_tsc(start_gradient);
@@ -299,7 +299,7 @@ int main(int argc, char **argv) {
 		for (int i = 0; i < N * D; i++) 		X[i] = data[i];
 	    for (int i = 0; i < N * no_dims; i++) 	Y[i] = randn() * .0001;
 
-		run(data, N, D, Y, no_dims, perplexity, max_iter);
+		run(data, N, D, Y, no_dims, perplexity, max_iter, 0.01); // TODO: parameter theta (0.01)
 	}
 
     #ifdef BENCHMARK

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 int reverse_int(int i) {
     unsigned char c1, c2, c3, c4;
