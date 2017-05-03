@@ -75,7 +75,7 @@ bool load_data(double* data, int n, int* d, char* data_file) {
     return true;
 }
 
-void save_data(double* data, int n, int d, char* data_file) {
+void save_datad(double* data, int n, int d, char* data_file) {
     /* Function to save a matrix into a file, writing the size at the beginning
     and then all the data values */
 
@@ -87,6 +87,24 @@ void save_data(double* data, int n, int d, char* data_file) {
 	fwrite(&n, sizeof(int), 1, h);
 	fwrite(&d, sizeof(int), 1, h);
     fwrite(data, sizeof(double), n * d, h);
+    fclose(h);
+    #ifdef DEBUG
+	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
+    #endif
+}
+
+void save_dataf(float* data, int n, int d, char* data_file) {
+    /* Function to save a matrix into a file, writing the size at the beginning
+    and then all the data values */
+
+	FILE *h;
+	if((h = fopen(data_file, "w+b")) == NULL) {
+		printf("Error: could not open data file (%s).\n", data_file);
+		return;
+	}
+	fwrite(&n, sizeof(int), 1, h);
+	fwrite(&d, sizeof(int), 1, h);
+    fwrite(data, sizeof(float), n * d, h);
     fclose(h);
     #ifdef DEBUG
 	printf("Wrote the %i x %i data matrix successfully!\n", n, d);

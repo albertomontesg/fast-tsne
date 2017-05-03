@@ -1,12 +1,12 @@
 #include "comp.h"
 
 // Compute low dimensional affinities
-double compute_low_dimensional_affinities(double* Y, int N, int no_dims,
-										  double* Q, double* DD) {
+dt compute_low_dimensional_affinities(dt* Y, int N, int no_dims,
+										  dt* Q, dt* DD) {
 
 	compute_squared_euclidean_distance(Y, N, no_dims, DD);
 
-	double sum_Q = .0;
+	dt sum_Q = .0;
     int nN = 0;
     for(int n = 0; n < N; n++) {
     	for(int m = 0; m < N; m++) {
