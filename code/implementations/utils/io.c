@@ -62,7 +62,7 @@ bool load_data(double* data, int n, int* d, char* data_file) {
         printf("Sample %d\n\n", offset+1);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                double v = data[offset * *d + i*cols+j];
+                double v = data[offset *d + i*cols+j];
                 if (v > 0.)
                     printf("\x1B[31m %.2f \x1B[0m\t", v);
                 else printf("%.2f\t", v);
@@ -91,4 +91,27 @@ void save_data(double* data, int n, int d, char* data_file) {
     #ifdef DEBUG
 	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
     #endif
+}
+
+void csr_to_dense(size_t* data_row, size_t* data_col, double* data_value, double* data,
+                  size_t N, size_t M)
+{
+    data = calloc(N * D, sizeof(double));
+    for (size_t i = 0; i < N; ++i)
+    {
+        for (size_t j = data_row[i]; j < data_row[i+1]; ++j)
+        {
+            data[ data_row[i] * M + data_col[j] ] = data_value[j];
+        }
+    }
+}
+
+/**
+ * @brief      Convertes a CSR matrix to dense and then stores it.
+ */
+void save_csr_data(size_t* data_row, size_t* data_col, double* data_value, int n, int d, char* data_file)
+    double * data = NULL;
+    csr_to_dense(data_row, data_col, data_value, data, n, d)
+    save_data(data, n, d, data_file);
+    free(data);
 }
