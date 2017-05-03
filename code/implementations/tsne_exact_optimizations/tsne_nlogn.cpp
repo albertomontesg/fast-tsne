@@ -164,7 +164,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		start_gradient = start_tsc();
 		#endif
 		// Compute
-		gradient_computation(Y, P, Q, sum_Q, N, no_dims, dC);
+		gradient_computation(Y, _row_P, _col_P, _val_P, Y, N, no_dims, dC);
 		// End compute
 		#ifdef BENCHMARK
 		cycles_gradient += (double) stop_tsc(start_gradient);
