@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "comp.h"
+#include <vector>
 #include "../trees/vptree.h"
+
+using namespace std;
 
 // Compute pairwise affinity perplexity
 void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double* val_P,
@@ -10,6 +13,7 @@ void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double*
 	#ifdef COUNTING
 	int ITERS = 0;
 	#endif
+
 
     VpTree<DataPoint, euclidean_distance>* tree = new VpTree<DataPoint, euclidean_distance>();
     vector<DataPoint> obj_X(N, DataPoint(D, -1, X));

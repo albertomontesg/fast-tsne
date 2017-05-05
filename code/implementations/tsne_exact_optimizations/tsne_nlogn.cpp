@@ -2,6 +2,7 @@
 #include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string>
 #include "../utils/io.h"
 #include "../utils/tsc_x86.h"
 #include "computations/comp.h"
@@ -52,6 +53,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	cycles_normalize += (double) stop_tsc(start_normalize);
 	#endif
 	#ifdef NUMERIC_CHECK
+	printf("save X_normalized\n");
 	save_data(X, N, D, "./datum/X_normalized");
 	#endif
 	free(mean); mean = NULL;
@@ -60,14 +62,15 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	// Compute pairsiwe affinity with perplexity which include binary search
 	// for the best perplexity value
 	const unsigned int K = (unsigned int) (3 * perplexity);
-	double* P = (double*) calloc(N * N, sizeof(double));
 	double* DD = (double*) malloc(N * N * sizeof(double));
 	unsigned int *row_P = (unsigned int*)    malloc((N + 1) * sizeof(unsigned int));
     unsigned int *col_P = (unsigned int*)    calloc(N * K, sizeof(unsigned int));
     double *val_P = (double*) calloc(N * K, sizeof(double));
 
-	if(P == NULL) { printf("[P] Memory allocation failed!\n"); exit(1); }
-	if(DD == NULL) { printf("[DD] Memory allocation failed!\n"); exit(1); }
+	if(row_P == NULL) { printf("[row_P] Memory allocation failed!\n"); exit(1); }
+	if(col_P == NULL) { printf("[col_P] Memory allocation failed!\n"); exit(1); }
+	if(val_P == NULL) { printf("[val_P] Memory allocation failed!\n"); exit(1); }
+
 	#ifdef BENCHMARK
 	start_perplexity = start_tsc();
 	#endif
@@ -82,22 +85,23 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	#endif
 	// P and DD will not be remove because future use
 	#ifdef NUMERIC_CHECK
-	save_csr_data(row_P, col_P, val_P, N, N, "./datum/P");
+	save_csr_data(row_P, col_P, val_P, N, N, "./datum/P_sparse");
 	#endif
-
 
 	// Symmetrize affinities
 	#ifdef BENCHMARK
 	start_symmetrize = start_tsc();
 	#endif
 	// Compute
-	symmetrize_affinities_nlogn(row_P, col_P, val_P, N);
+	symmetrize_affinities_nlogn(&row_P, &col_P, &val_P, N);
 	// End compute
 	#ifdef BENCHMARK
 	cycles_symmetrize += (double) stop_tsc(start_symmetrize);
 	#endif
+
 	#ifdef NUMERIC_CHECK
-	save_csr_data(row_P, col_P, val_P, N, N, "./datum/P");
+	printf("saving P matrix\n");
+	save_csr_data(row_P, col_P, val_P, N, N, "./datum/P_sparse");
 	#endif
 
 
@@ -106,7 +110,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
     start_early_exageration = start_tsc();
     #endif
     // Compute
-    early_exageration(P, N, 12.0);
+    early_exageration_sparse(val_P, N*K, 12.0);
     // End compute
     #ifdef BENCHMARK
     cycles_early_exageration += (double) stop_tsc(start_early_exageration);
@@ -156,7 +160,6 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		if (iter == 300) save_data(Q, N, N, "./datum/Q_300");
 		#endif
 
-
 		// Gradient Computation
 		// Make sure the gradient contains all zeros
 		for (int i = 0; i < N * no_dims; i++) dC[i] = 0.;
@@ -164,7 +167,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		start_gradient = start_tsc();
 		#endif
 		// Compute
-		gradient_computation(Y, row_P, col_P, val_P, N, D, dC, theta);
+		gradient_computation(Y, row_P, col_P, val_P, N, no_dims, dC, theta);
 		// End compute
 		#ifdef BENCHMARK
 		cycles_gradient += (double) stop_tsc(start_gradient);
@@ -173,7 +176,6 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		if (iter == 0) save_data(dC, N, no_dims, "./datum/dC_0");
 		if (iter == 300) save_data(dC, N, no_dims, "./datum/dC_300");
 		#endif
-
 
 		// Perform gradient update
 		#ifdef BENCHMARK
@@ -212,7 +214,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
             start_early_exageration = start_tsc();
             #endif
             // Compute
-            early_exageration(P, N, 1/12.0);
+            early_exageration_sparse(val_P, N*K, 1/12.0);
             // End compute
             #ifdef BENCHMARK
             cycles_early_exageration += (double) stop_tsc(start_early_exageration);
@@ -226,7 +228,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	cycles += cycles_normalize + cycles_perplexity + cycles_symmetrize + cycles_early_exageration + cycles_ld_affinity + cycles_gradient + cycles_update + cycles_normalize_2;
 	#endif
 
-	free(P); 		P = NULL;
+//	free(P); 		P = NULL;
 	free(DD); 		DD = NULL;
 	free(Q);		Q = NULL;
 	free(dC);		dC = NULL;
@@ -284,6 +286,7 @@ int main(int argc, char **argv) {
 	save_data(Y, N, no_dims, "./datum/Y");
 	#endif
 
+	printf("before loading data\n");
 	// Read the parameters and the dataset
     bool success = load_data(data, N, &D, data_file);
     if (!success) exit(1);
@@ -298,9 +301,9 @@ int main(int argc, char **argv) {
 		// Randomly intialize arrays
 		for (int i = 0; i < N * D; i++) 		X[i] = data[i];
 	    for (int i = 0; i < N * no_dims; i++) 	Y[i] = randn() * .0001;
-
-		run(data, N, D, Y, no_dims, perplexity, max_iter, 0.01); // TODO: parameter theta (0.01)
+		run(data, N, D, Y, no_dims, perplexity, max_iter, 0.5); // TODO: parameter theta (0.01)
 	}
+
 
     #ifdef BENCHMARK
 	cycles_normalize /= (double) num_runs;

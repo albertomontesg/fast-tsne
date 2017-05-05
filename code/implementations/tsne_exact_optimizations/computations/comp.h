@@ -1,5 +1,8 @@
 #include <math.h>
 #include <float.h>
+#include <cstddef>
+#include <stdlib.h>
+#include <vector>
 
 static inline double sign(double x) { return (x == .0 ? .0 : (x < .0 ? -1.0 : 1.0)); }
 
@@ -15,9 +18,10 @@ void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double*
 										  double perplexity, unsigned int K);
 // Symmetrize pairwise affinities P_ij
 void symmetrize_affinities(double* P, int N);
-void symmetrize_affinities_nlogn(unsigned int* row_P, unsigned int* col_P, double* val_P, int N);
+void symmetrize_affinities_nlogn(unsigned int** row_P, unsigned int** col_P, double** val_P, int N);
 // Early exageration (Multiply all the values of P to the given value)
 void early_exageration(double* P, int N, double scale);
+void early_exageration_sparse(double* val_P, int no_elements, double scale);
 // Compute low dimensional affinities
 double compute_low_dimensional_affinities(double* Y, int N, int no_dims,
 										  double* Q, double* DD);

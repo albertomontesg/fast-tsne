@@ -178,10 +178,11 @@ void SPTree::init(SPTree* inp_parent, unsigned int D, double* inp_data, double* 
 // Destructor for SPTree
 SPTree::~SPTree()
 {
+
     for(unsigned int i = 0; i < no_children; i++) {
         if(children[i] != NULL) delete children[i];
     }
-    free(children);
+	if(no_children!=0) free(children);
     free(center_of_mass);
     free(buff);
     delete boundary;

@@ -24,6 +24,7 @@ void gradient_computation(double* Y, unsigned int* row_P, unsigned int* col_P, d
 	}
 	free(pos_f);
 	free(neg_f);
+
 	delete tree;
 }
 

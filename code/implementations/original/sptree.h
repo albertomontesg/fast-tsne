@@ -83,7 +83,7 @@ class SPTree
     
     // Children
     SPTree** children;
-    unsigned int no_children;
+    size_t no_children;
     
 public:
     SPTree(unsigned int D, double* inp_data, unsigned int N);

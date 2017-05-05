@@ -40,6 +40,7 @@
 #include <queue>
 #include <limits>
 #include <cmath>
+#include <cfloat>
 
 
 #ifndef VPTREE_H

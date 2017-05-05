@@ -1,9 +1,13 @@
+#include <stdio.h>
 #include "comp.h"
 
 // Symmetrize pairwise affinities P_ij
-void symmetrize_affinities_nlogn(unsigned int* row_P, unsigned int* col_P, double* val_P, int N) {
+void symmetrize_affinities_nlogn(unsigned int** row_P_pointer, unsigned int** col_P_pointer, double** val_P_pointer, int N) {
+	unsigned int* row_P = *row_P_pointer;
+	unsigned int* col_P = *col_P_pointer;
+	double* val_P = *val_P_pointer;
 
-    // Count number of elements and row counts of symmetric matrix
+	// Count number of elements and row counts of symmetric matrix
     int* row_counts = (int*) calloc(N, sizeof(int));
     if(row_counts == NULL) { printf("Memory allocation failed!\n"); exit(1); }
     for(int n = 0; n < N; n++) {
@@ -74,14 +78,14 @@ void symmetrize_affinities_nlogn(unsigned int* row_P, unsigned int* col_P, doubl
     for(int i = 0; i < no_elem; i++) sym_val_P[i] /= 2.0;
 
     // Return symmetrized matrices
-    free(row_P); row_P = sym_row_P;
-    free(col_P); col_P = sym_col_P;
-    free(val_P); val_P = sym_val_P;
+    free(row_P); *row_P_pointer = sym_row_P;
+    free(col_P); *col_P_pointer = sym_col_P;
+    free(val_P); *val_P_pointer = sym_val_P;
 
     //renormalize
     double sum_P = .0;
-    for(int i = 0; i < row_P[N]; i++) sum_P += val_P[i];
-    for(int i = 0; i < row_P[N]; i++) val_P[i] /= sum_P;
+    for(int i = 0; i < (*row_P_pointer)[N]; i++) sum_P += (*val_P_pointer)[i];
+    for(int i = 0; i < (*row_P_pointer)[N]; i++) (*val_P_pointer)[i] /= sum_P;
 
     // Free up some memery
     free(offset); offset = NULL;
