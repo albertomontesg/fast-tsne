@@ -46,11 +46,17 @@
 #ifndef VPTREE_H
 #define VPTREE_H
 
+#ifdef COUNTING
+int ITERS_buildfromPoints;
+int ITERS_eucledianDistance;
+#endif
+
 class DataPoint
 {
     int _ind;
 
 public:
+
     double* _x;
     int _D;
     DataPoint() {
@@ -89,6 +95,9 @@ public:
 };
 
 double euclidean_distance(const DataPoint &t1, const DataPoint &t2) {
+    #ifdef COUNTING
+    ITERS_eucledianDistance++;
+    #endif
     double dd = .0;
     double* x1 = t1._x;
     double* x2 = t2._x;
@@ -107,7 +116,8 @@ class VpTree
 public:
     
     // Default constructor
-    VpTree() : _root(0) {}
+    VpTree() : _root(0) {
+    }
     
     // Destructor
     ~VpTree() {
@@ -202,7 +212,9 @@ private:
         node->index = lower;
         
         if (upper - lower > 1) {      // if we did not arrive at leaf yet
-            
+            #ifdef COUNTING
+            ITERS_buildfromPoints++;
+            #endif
             // Choose an arbitrary point and move it to the start
             int i = (int) ((double)rand() / RAND_MAX * (upper - lower - 1)) + lower;
             std::swap(_items[lower], _items[i]);

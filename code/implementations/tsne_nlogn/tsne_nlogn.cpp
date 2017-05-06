@@ -3,6 +3,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
+
+#ifdef COUNTING
+size_t ITERS_insert = 0;
+size_t ITERS_subdivide = 0;
+#endif
+
+
 #include "../utils/io.h"
 #include "../utils/tsc_x86.h"
 #include "computations/comp.h"
@@ -130,10 +137,6 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	if(mean == NULL) { printf("[mean] Memory allocation failed!\n"); exit(1); }
 	for (int i = 0; i < N * no_dims; i++) gains[i] = 1.0;
 
-	#ifdef COUNTING
-	max_iter = 0;
-	#endif
-
 	// Training parameters
 	double eta = 200.0;
 	double momentum = .5;
@@ -224,6 +227,11 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		if (iter == 250) momentum = final_momentum;
 	}
 
+
+	#ifdef COUNTING
+	printf("it_ins %ld\nit_sub %ld\n", ITERS_insert, ITERS_subdivide);
+	#endif
+
 	#ifdef BENCHMARK
 	cycles += cycles_normalize + cycles_perplexity + cycles_symmetrize + cycles_early_exageration + cycles_ld_affinity + cycles_gradient + cycles_update + cycles_normalize_2;
 	#endif
@@ -286,7 +294,6 @@ int main(int argc, char **argv) {
 	save_data(Y, N, no_dims, "./datum/Y");
 	#endif
 
-	printf("before loading data\n");
 	// Read the parameters and the dataset
     bool success = load_data(data, N, &D, data_file);
     if (!success) exit(1);

@@ -9,9 +9,9 @@ PERPLEXITY=50       # Perplexity best value
 DATA_FILE="../../../data/mnist/train-images.idx3-ubyte"
 
 
-CC=g++-6
+CC=g++-4.9
 COMPILER_FLAGS="-O3 -march=native"
-SRC="tsne_exact.cpp ../utils/io.c ./computations/normalize.c ./computations/compute_squared_euclidean_distance.c ./computations/compute_pairwise_affinity_perplexity.c ./computations/symmetrize_affinities.c ./computations/early_exageration.c ./computations/compute_low_dimensional_affinities.c ./computations/gradient_computation.c ./computations/gradient_update.c"
+SRC=tsne_nlogn.cpp ../utils/io.c ./trees/sptree.cpp ./trees/vptree.h ./computations/normalize.c ./computations/compute_squared_euclidean_distance.c ./computations/compute_pairwise_affinity_perplexity_nlogn.c ./computations/symmetrize_affinities_nlogn.c ./computations/early_exageration.c ./computations/compute_low_dimensional_affinities.c ./computations/gradient_computation.c ./computations/gradient_update.c
 BIN=tsne.o
 BIN_COUNT=tsne_count.o
 BIN_BENCH=tsne_bench.o

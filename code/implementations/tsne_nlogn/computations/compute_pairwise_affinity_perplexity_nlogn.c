@@ -10,11 +10,9 @@ void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double*
 										  unsigned int* row_P, unsigned int* col_P,
 										  double perplexity, unsigned int K)
 {
-	#ifdef COUNTING
-	int ITERS = 0;
-	#endif
-
-
+    #ifdef COUNTING
+    int ITERS = 0;
+    #endif
     VpTree<DataPoint, euclidean_distance>* tree = new VpTree<DataPoint, euclidean_distance>();
     vector<DataPoint> obj_X(N, DataPoint(D, -1, X));
     for(int n = 0; n < N; n++) obj_X[n] = DataPoint(D, n, X + n * D);
@@ -76,9 +74,9 @@ void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double*
             // Update iteration counter
             iter++;
 		}
-		#ifdef COUNTING
-		ITERS += iter;
-		#endif
+        #ifdef COUNTING
+        ITERS += iter;
+        #endif
 
         // Row-normalize current row of P and store in matrix
         for(unsigned int m = 0; m < K; m++) cur_P[m] /= sum_P;
@@ -88,9 +86,7 @@ void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double*
             val_P[row_P[n] + m] = cur_P[m];
         }
 	}
-
-	#ifdef COUNTING
-	printf("%d\n", ITERS);
-	#endif
-
+    #ifdef COUNTING
+    printf("it %d\nit_ec %d\nit_buildFromPoints %d\n", ITERS, ITERS_eucledianDistance, ITERS_buildfromPoints);
+    #endif
 }

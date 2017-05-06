@@ -37,7 +37,10 @@
 #include <cmath>
 #include "sptree.h"
 
-
+#ifdef COUNTING
+extern size_t ITERS_insert;
+extern size_t ITERS_subdivide;
+#endif
 
 // Constructs cell
 Cell::Cell(unsigned int inp_dimension) {
@@ -210,6 +213,10 @@ bool SPTree::insert(unsigned int new_index)
     double* point = data + new_index * dimension;
     if(!boundary->containsPoint(point))
         return false;
+
+    #ifdef COUNTING
+    ITERS_insert++;
+    #endif
     
     // Online update of cumulative size and center-of-mass
     cum_size++;
@@ -255,6 +262,9 @@ void SPTree::subdivide() {
     // Create new children
     double* new_corner = (double*) malloc(dimension * sizeof(double));
     double* new_width  = (double*) malloc(dimension * sizeof(double));
+    #ifdef COUNTING
+    ITERS_subdivide += no_children;
+    #endif
     for(unsigned int i = 0; i < no_children; i++) {
         unsigned int div = 1;
         for(unsigned int d = 0; d < dimension; d++) {
