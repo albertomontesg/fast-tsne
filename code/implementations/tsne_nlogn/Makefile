@@ -1,34 +1,44 @@
 CC=g++
 CFLAGS=-O3 -march=native
-SRC=tsne_nlogn.cpp ../utils/io.c ./trees/sptree.cpp ./trees/vptree.h ./computations/normalize.c ./computations/compute_squared_euclidean_distance.c ./computations/compute_pairwise_affinity_perplexity_nlogn.c ./computations/symmetrize_affinities_nlogn.c ./computations/early_exageration.c ./computations/compute_low_dimensional_affinities.c ./computations/gradient_computation.c ./computations/gradient_update.c
-BIN=tsne.o
+SRC=tsne_exact.cpp
+BIN_DOUBLE=tsned.o
+BIN_FLOAT=tsnef.o
 
 all: tsne
 
 tsne:
-	$(CC) $(CFLAGS) $(SRC) -o ./$(BIN)
+	$(CC) $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
 
 debug:
-	$(CC) -DDEBUG $(CFLAGS) $(SRC) -o ./$(BIN)
-	./$(BIN) ../../../data/mnist/train-images.idx3-ubyte result.dat 1000 50 2 1000
+	$(CC) -DDEBUG $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
+	$(CC) -DDEBUG -DSINGLE_PRECISION $(CFLAGS) $(SRC) -o ./$(BIN_FLOAT)
+	./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
+	./$(BIN_FLOAT) ../../../data/mnist/train-images.idx3-ubyte result_f.dat 1000 50 2 1000
 
-numeric_check:
-	$(CC) -DNUMERIC_CHECK $(CFLAGS) $(SRC) -o ./$(BIN)
-	./$(BIN) ../../../data/mnist/train-images.idx3-ubyte result.dat 1000 50 2 1000
+asm:
+	$(CC) $(CFLAGS) -S -fverbose-asm $(SRC) -o ./tsne_d.s
+	$(CC) -DSINGLE_PRECISION $(CFLAGS) -S -fverbose-asm $(SRC) -o ./tsne_f.s
+
+numeric_check_d:
+	$(CC) -DDEBUG -DNUMERIC_CHECK $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
+	./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
+
+numeric_check_f:
+	$(CC) -DDEBUG -DNUMERIC_CHECK -DSINGLE_PRECISION $(CFLAGS) $(SRC) -o ./$(BIN_FLOAT)
+	./$(BIN_FLOAT) ../../../data/mnist/train-images.idx3-ubyte result_f.dat 1000 50 2 1000
 
 benchmark:
-	$(CC) -DBENCHMARK $(CFLAGS) $(SRC) -o ./$(BIN)
-	./$(BIN) ../../../data/mnist/train-images.idx3-ubyte result.dat 1000 50 2 1000
+	$(CC) -DBENCHMARK $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
+	./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
 
 counting:
-	$(CC) -DCOUNTING $(CFLAGS) $(SRC) -o ./$(BIN)
-	./$(BIN) ../../../data/mnist/train-images.idx3-ubyte result.dat 1000 50 2 1000
+	$(CC) -DCOUNTING $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
+	./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
 
 run:
-	./$(BIN) ../../../data/mnist/train-images.idx3-ubyte result.dat 1000 50 2 1000
+	./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
 
 clean:
-	rm ./*.o
-	rm ./computations/*.o
-	rm ../utils/*.o
-	rm ./datum/*
+	rm *.o
+	rm *.dat
+	rm *.s

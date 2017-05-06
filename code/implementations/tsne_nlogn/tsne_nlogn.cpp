@@ -12,7 +12,15 @@ size_t ITERS_subdivide = 0;
 
 #include "../utils/io.h"
 #include "../utils/tsc_x86.h"
-#include "computations/comp.h"
+#include "../utils/random.h"
+#include "../utils/data_type.h"
+#include "computations/compute_low_dimensional_affinities.h"
+#include "computations/compute_pairwise_affinity_perplexity.h"
+#include "computations/early_exageration.h"
+#include "computations/gradient_computation.h"
+#include "computations/gradient_update.h"
+#include "computations/normalize.h"
+#include "computations/symmetrize_affinities.h"
 
 #define NUM_RUNS 1
 
@@ -27,28 +35,18 @@ myInt64 start_early_exageration, start_ld_affinity;
 myInt64 start_gradient, start_update, start_normalize_2;
 #endif
 
-// Generates a Gaussian random number
-double randn() {
-	double x, y, radius;
-	do {
-		x = 2 * (rand() / ((double) RAND_MAX + 1)) - 1;
-		y = 2 * (rand() / ((double) RAND_MAX + 1)) - 1;
-		radius = (x * x) + (y * y);
-	} while((radius >= 1.0) || (radius == 0.0));
-	radius = sqrt(-2 * log(radius) / radius);
-	x *= radius;
-	return x;
-}
-
 
 // Run function
-void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
-	 	 int max_iter, double theta) {
+void run(dt* X, int N, int D, dt* Y, int no_dims, dt perplexity,
+	 	 int max_iter) {
 
+    #ifdef NUMERIC_CHECK
+    save_data(X, N, D, "./datum/X");
+    #endif
 
 	// Normalize input X (substract mean and normalize to the maximum value
 	// to avoid numerical inestabilities)
-	double* mean = (double*) calloc(D, sizeof(double));
+	dt* mean = (dt*) calloc(D, sizeof(dt));
 	if(mean == NULL) { printf("[mean] Memory allocation failed!\n"); exit(1); }
 	#ifdef BENCHMARK
 	start_normalize = start_tsc();
@@ -125,11 +123,11 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 
 
 	// Initialize Q low dimensionality affinity matrix and gradient dC
-	double* Q = (double*) malloc(N * N * sizeof(double));
-	double* dC = (double*) malloc(N * no_dims * sizeof(double));
-	double* uY = (double*) calloc(N * no_dims, sizeof(double));
-	double* gains = (double*) malloc(N * no_dims * sizeof(double));
-	mean = (double*) malloc(no_dims * sizeof(double));
+	dt* Q = (dt*) malloc(N * N * sizeof(dt));
+	dt* dC = (dt*) malloc(N * no_dims * sizeof(dt));
+	dt* uY = (dt*) calloc(N * no_dims, sizeof(dt));
+	dt* gains = (dt*) malloc(N * no_dims * sizeof(dt));
+	mean = (dt*) malloc(no_dims * sizeof(dt));
 	if(Q == NULL) { printf("[Q] Memory allocation failed!\n"); exit(1); }
 	if(dC == NULL) { printf("[dC] Memory allocation failed!\n"); exit(1); }
 	if(uY == NULL) { printf("[uY] Memory allocation failed!\n"); exit(1); }
@@ -138,9 +136,9 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	for (int i = 0; i < N * no_dims; i++) gains[i] = 1.0;
 
 	// Training parameters
-	double eta = 200.0;
-	double momentum = .5;
-	double final_momentum = .8;
+	dt eta = 200.0;
+	dt momentum = .5;
+	dt final_momentum = .8;
 	// Perform the main training loop
 	for (int iter = 0; iter < max_iter; iter++) {
 
@@ -151,7 +149,7 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		start_ld_affinity = start_tsc();
 		#endif
 		// Compute
-		double sum_Q;
+		dt sum_Q;
 		sum_Q = compute_low_dimensional_affinities(Y, N, no_dims, Q, DD);
 		// End compute
 		#ifdef BENCHMARK
@@ -258,7 +256,7 @@ int main(int argc, char **argv) {
     char *data_file = argv[1];
     char *result_file = argv[2];
     int N = atoi(argv[3]);
-    double perplexity = atof(argv[4]);
+    dt perplexity = (dt) atof(argv[4]);
     int no_dims = atoi(argv[5]);
     int max_iter = atoi(argv[6]);
 
@@ -279,8 +277,8 @@ int main(int argc, char **argv) {
 	// Define some variables
 	int D;
 	double *data = (double*) malloc(N * 784 * sizeof(double));
-	double *X = (double*) malloc(N * 784 * sizeof(double));
-    double* Y = (double*) malloc(N * no_dims * sizeof(double));
+	dt* X = (dt*) malloc(N * 784 * sizeof(dt));
+    dt* Y = (dt*) malloc(N * no_dims * sizeof(dt));
     if(data == NULL) { printf("[data] Memory allocation failed!\n"); exit(1); }
     if(X == NULL) { printf("[X] Memory allocation failed!\n"); exit(1); }
     if(Y == NULL ) { printf("[Y] Memory allocation failed!\n"); exit(1); }
@@ -306,7 +304,7 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < num_runs; i++) {
 		// Randomly intialize arrays
-		for (int i = 0; i < N * D; i++) 		X[i] = data[i];
+		for (int i = 0; i < N * D; i++) 		X[i] = (dt) data[i];
 	    for (int i = 0; i < N * no_dims; i++) 	Y[i] = randn() * .0001;
 		run(data, N, D, Y, no_dims, perplexity, max_iter, 0.5); // TODO: parameter theta (0.01)
 	}
