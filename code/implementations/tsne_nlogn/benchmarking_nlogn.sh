@@ -1,4 +1,4 @@
-#!/usr/bin/shell
+#!/bin/sh
 
 MODE="benchmark"
 BENCHMARK="data_type"
@@ -33,7 +33,7 @@ FILE_PREFIX="./benchmarking/$TODAY@$COMPILER_FLAGS"
 
 # Input size range
 START=200
-STOP=3000
+STOP=4000
 INTERVAL=200
 
 case $MODE in

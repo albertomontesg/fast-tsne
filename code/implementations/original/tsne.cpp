@@ -157,13 +157,14 @@ void TSNE::run(double* X, int N, int D, double* Y, int no_dims,
         double sum_P = .0;
         for(int i = 0; i < row_P[N]; i++) sum_P += val_P[i];
         for(int i = 0; i < row_P[N]; i++) val_P[i] /= sum_P;
+
+        #if NUMERIC_CHECK
+        save_csr_data(row_P, col_P, val_P, N, N, "./datum/P_sparse");
+		#endif
     }
 #if DEBUG == 1
     end = clock();
 #endif
-    #if NUMERIC_CHECK
-    save_data(P, N, N, "./datum/P_sym");
-    #endif
 
     // Lie about the P-values
     if(exact) { for(int i = 0; i < N * N; i++)        P[i] *= 12.0; }

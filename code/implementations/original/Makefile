@@ -1,4 +1,4 @@
-CC=g++-6
+CC=g++
 CFLAGS=-O3 -march=native
 BIN=bh_tsne.o
 
@@ -15,7 +15,7 @@ tsne:
 	$(CC) $(CFLAGS) sptree.cpp tsne.cpp ../utils/io.c -o ./$(BIN)
 
 run:
-	./$(BIN) ../../../data/mnist/train-images.idx3-ubyte result.dat 1000 0 50 2 1000
+	./$(BIN) ../../../data/mnist/train-images.idx3-ubyte result.dat 1000 0.5 50 2 1000
 
 clean:
 	rm ./$(BIN)

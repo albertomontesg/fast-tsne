@@ -34,6 +34,7 @@
 #ifndef SPTREE_H
 #define SPTREE_H
 
+
 using namespace std;
 
 
@@ -83,7 +84,7 @@ class SPTree
     
     // Children
     SPTree** children;
-    size_t no_children;
+    unsigned int no_children;
     
 public:
     SPTree(unsigned int D, double* inp_data, unsigned int N);
