@@ -34,6 +34,7 @@
 #ifndef SPTREE_H
 #define SPTREE_H
 
+#include "../../utils/data_type.h"
 
 using namespace std;
 
@@ -41,20 +42,20 @@ using namespace std;
 class Cell {
 
     unsigned int dimension;
-    double* corner;
-    double* width;
+    dt* corner;
+    dt* width;
     
     
 public:
     Cell(unsigned int inp_dimension);
-    Cell(unsigned int inp_dimension, double* inp_corner, double* inp_width);
+    Cell(unsigned int inp_dimension, dt* inp_corner, dt* inp_width);
     ~Cell();
     
-    double getCorner(unsigned int d);
-    double getWidth(unsigned int d);
-    void setCorner(unsigned int d, double val);
-    void setWidth(unsigned int d, double val);
-    bool containsPoint(double point[]);
+    dt getCorner(unsigned int d);
+    dt getWidth(unsigned int d);
+    void setCorner(unsigned int d, dt val);
+    void setWidth(unsigned int d, dt val);
+    bool containsPoint(dt point[]);
 };
 
 
@@ -65,7 +66,7 @@ class SPTree
     static const unsigned int QT_NODE_CAPACITY = 1;
 
     // A buffer we use when doing force computations
-    double* buff;
+    dt* buff;
     
     // Properties of this node in the tree
     SPTree* parent;
@@ -78,8 +79,8 @@ class SPTree
     Cell* boundary;
     
     // Indices in this space-partitioning tree node, corresponding center-of-mass, and list of all children
-    double* data;
-    double* center_of_mass;
+    dt* data;
+    dt* center_of_mass;
     unsigned int index[QT_NODE_CAPACITY];
     
     // Children
@@ -87,13 +88,13 @@ class SPTree
     unsigned int no_children;
     
 public:
-    SPTree(unsigned int D, double* inp_data, unsigned int N);
-    SPTree(unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
-    SPTree(unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
-    SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, unsigned int N, double* inp_corner, double* inp_width);
-    SPTree(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
+    SPTree(unsigned int D, dt* inp_data, unsigned int N);
+    SPTree(unsigned int D, dt* inp_data, dt* inp_corner, dt* inp_width);
+    SPTree(unsigned int D, dt* inp_data, unsigned int N, dt* inp_corner, dt* inp_width);
+    SPTree(SPTree* inp_parent, unsigned int D, dt* inp_data, unsigned int N, dt* inp_corner, dt* inp_width);
+    SPTree(SPTree* inp_parent, unsigned int D, dt* inp_data, dt* inp_corner, dt* inp_width);
     ~SPTree();
-    void setData(double* inp_data);
+    void setData(dt* inp_data);
     SPTree* getParent();
     void construct(Cell boundary);
     bool insert(unsigned int new_index);
@@ -102,12 +103,12 @@ public:
     void rebuildTree();
     void getAllIndices(unsigned int* indices);
     unsigned int getDepth();
-    void computeNonEdgeForces(unsigned int point_index, double theta, double neg_f[], double* sum_Q);
-    void computeEdgeForces(unsigned int* row_P, unsigned int* col_P, double* val_P, int N, double* pos_f);
+    void computeNonEdgeForces(unsigned int point_index, dt theta, dt neg_f[], dt* sum_Q);
+    void computeEdgeForces(unsigned int* row_P, unsigned int* col_P, dt* val_P, int N, dt* pos_f);
     void print();
     
 private:
-    void init(SPTree* inp_parent, unsigned int D, double* inp_data, double* inp_corner, double* inp_width);
+    void init(SPTree* inp_parent, unsigned int D, dt* inp_data, dt* inp_corner, dt* inp_width);
     void fill(unsigned int N);
     unsigned int getAllIndices(unsigned int* indices, unsigned int loc);
     bool isChild(unsigned int test_index, unsigned int start, unsigned int end);

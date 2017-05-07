@@ -1,6 +1,6 @@
-CC=g++
+CC=g++-6
 CFLAGS=-O3 -march=native
-SRC=tsne_exact.cpp
+SRC=tsne_nlogn.cpp ./trees/sptree.cpp
 BIN_DOUBLE=tsned.o
 BIN_FLOAT=tsnef.o
 

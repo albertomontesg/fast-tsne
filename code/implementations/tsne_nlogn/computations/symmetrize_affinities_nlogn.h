@@ -1,11 +1,14 @@
+#ifndef SYMMETRIZE_AFFINITIES_NLOGN_H
+#define SYMMETRIZE_AFFINITIES_NLOGN_H
+
+#include "../../utils/data_type.h"
 #include <stdio.h>
-#include "comp.h"
 
 // Symmetrize pairwise affinities P_ij
-void symmetrize_affinities_nlogn(unsigned int** row_P_pointer, unsigned int** col_P_pointer, double** val_P_pointer, int N) {
+inline void symmetrize_affinities_nlogn(unsigned int** row_P_pointer, unsigned int** col_P_pointer, dt** val_P_pointer, int N) {
 	unsigned int* row_P = *row_P_pointer;
 	unsigned int* col_P = *col_P_pointer;
-	double* val_P = *val_P_pointer;
+	dt* val_P = *val_P_pointer;
 
 	// Count number of elements and row counts of symmetric matrix
     int* row_counts = (int*) calloc(N, sizeof(int));
@@ -31,7 +34,7 @@ void symmetrize_affinities_nlogn(unsigned int** row_P_pointer, unsigned int** co
     // Allocate memory for symmetrized matrix
     unsigned int* sym_row_P = (unsigned int*) malloc((N + 1) * sizeof(unsigned int));
     unsigned int* sym_col_P = (unsigned int*) malloc(no_elem * sizeof(unsigned int));
-    double* sym_val_P = (double*) malloc(no_elem * sizeof(double));
+    dt* sym_val_P = (dt*) malloc(no_elem * sizeof(dt));
     if(sym_row_P == NULL || sym_col_P == NULL || sym_val_P == NULL) { printf("Memory allocation failed!\n"); exit(1); }
 
     // Construct new row indices for symmetric matrix
@@ -83,7 +86,7 @@ void symmetrize_affinities_nlogn(unsigned int** row_P_pointer, unsigned int** co
     free(val_P); *val_P_pointer = sym_val_P;
 
     //renormalize
-    double sum_P = .0;
+    dt sum_P = .0;
     for(int i = 0; i < (*row_P_pointer)[N]; i++) sum_P += (*val_P_pointer)[i];
     for(int i = 0; i < (*row_P_pointer)[N]; i++) (*val_P_pointer)[i] /= sum_P;
 
@@ -91,3 +94,5 @@ void symmetrize_affinities_nlogn(unsigned int** row_P_pointer, unsigned int** co
     free(offset); offset = NULL;
     free(row_counts); row_counts  = NULL;
 }
+
+#endif

@@ -14,13 +14,13 @@ size_t ITERS_subdivide = 0;
 #include "../utils/tsc_x86.h"
 #include "../utils/random.h"
 #include "../utils/data_type.h"
-#include "computations/compute_low_dimensional_affinities.h"
-#include "computations/compute_pairwise_affinity_perplexity.h"
-#include "computations/early_exageration.h"
-#include "computations/gradient_computation.h"
-#include "computations/gradient_update.h"
-#include "computations/normalize.h"
-#include "computations/symmetrize_affinities.h"
+#include "../tsne_exact_optimizations/computations/compute_low_dimensional_affinities.h"
+#include "computations/compute_pairwise_affinity_perplexity_nlogn.h"
+#include "computations/early_exageration_nlogn.h"
+#include "computations/gradient_computation_nlogn.h"
+#include "../tsne_exact_optimizations/computations/gradient_update.h"
+#include "../tsne_exact_optimizations/computations/normalize.h"
+#include "computations/symmetrize_affinities_nlogn.h"
 
 #define NUM_RUNS 1
 
@@ -37,8 +37,8 @@ myInt64 start_gradient, start_update, start_normalize_2;
 
 
 // Run function
-void run(dt* X, int N, int D, dt* Y, int no_dims, dt perplexity,
-	 	 int max_iter) {
+void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
+	 	 int max_iter, double theta) {
 
     #ifdef NUMERIC_CHECK
     save_data(X, N, D, "./datum/X");
@@ -67,10 +67,10 @@ void run(dt* X, int N, int D, dt* Y, int no_dims, dt perplexity,
 	// Compute pairsiwe affinity with perplexity which include binary search
 	// for the best perplexity value
 	const unsigned int K = (unsigned int) (3 * perplexity);
-	double* DD = (double*) malloc(N * N * sizeof(double));
+	dt* DD = (dt*) malloc(N * N * sizeof(dt));
 	unsigned int *row_P = (unsigned int*)    malloc((N + 1) * sizeof(unsigned int));
     unsigned int *col_P = (unsigned int*)    calloc(N * K, sizeof(unsigned int));
-    double *val_P = (double*) calloc(N * K, sizeof(double));
+    dt *val_P = (dt*) calloc(N * K, sizeof(dt));
 
 	if(row_P == NULL) { printf("[row_P] Memory allocation failed!\n"); exit(1); }
 	if(col_P == NULL) { printf("[col_P] Memory allocation failed!\n"); exit(1); }
@@ -168,7 +168,7 @@ void run(dt* X, int N, int D, dt* Y, int no_dims, dt perplexity,
 		start_gradient = start_tsc();
 		#endif
 		// Compute
-		gradient_computation(Y, row_P, col_P, val_P, N, no_dims, dC, theta);
+		gradient_computation_nlogn(Y, row_P, col_P, val_P, N, no_dims, dC, theta);
 		// End compute
 		#ifdef BENCHMARK
 		cycles_gradient += (double) stop_tsc(start_gradient);

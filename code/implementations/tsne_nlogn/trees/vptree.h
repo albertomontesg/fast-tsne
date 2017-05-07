@@ -42,6 +42,7 @@
 #include <cmath>
 #include <cfloat>
 
+#include "../../utils/data_type.h"
 
 #ifndef VPTREE_H
 #define VPTREE_H
@@ -57,24 +58,24 @@ class DataPoint
 
 public:
 
-    double* _x;
+    dt* _x;
     int _D;
     DataPoint() {
         _D = 1;
         _ind = -1;
         _x = NULL;
     }
-    DataPoint(int D, int ind, double* x) {
+    DataPoint(int D, int ind, dt* x) {
         _D = D;
         _ind = ind;
-        _x = (double*) malloc(_D * sizeof(double));
+        _x = (dt*) malloc(_D * sizeof(dt));
         for(int d = 0; d < _D; d++) _x[d] = x[d];
     }
     DataPoint(const DataPoint& other) {                     // this makes a deep copy -- should not free anything
         if(this != &other) {
             _D = other.dimensionality();
             _ind = other.index();
-            _x = (double*) malloc(_D * sizeof(double));      
+            _x = (dt*) malloc(_D * sizeof(dt));      
             for(int d = 0; d < _D; d++) _x[d] = other.x(d);
         }
     }
@@ -84,24 +85,24 @@ public:
             if(_x != NULL) free(_x);
             _D = other.dimensionality();
             _ind = other.index();
-            _x = (double*) malloc(_D * sizeof(double));
+            _x = (dt*) malloc(_D * sizeof(dt));
             for(int d = 0; d < _D; d++) _x[d] = other.x(d);
         }
         return *this;
     }
     int index() const { return _ind; }
     int dimensionality() const { return _D; }
-    double x(int d) const { return _x[d]; }
+    dt x(int d) const { return _x[d]; }
 };
 
-double euclidean_distance(const DataPoint &t1, const DataPoint &t2) {
+dt euclidean_distance(const DataPoint &t1, const DataPoint &t2) {
     #ifdef COUNTING
     ITERS_eucledianDistance++;
     #endif
-    double dd = .0;
-    double* x1 = t1._x;
-    double* x2 = t2._x;
-    double diff;
+    dt dd = .0;
+    dt* x1 = t1._x;
+    dt* x2 = t2._x;
+    dt diff;
     for(int d = 0; d < t1._D; d++) {
         diff = (x1[d] - x2[d]);
         dd += diff * diff;
@@ -110,7 +111,7 @@ double euclidean_distance(const DataPoint &t1, const DataPoint &t2) {
 }
 
 
-template<typename T, double (*distance)( const T&, const T& )>
+template<typename T, dt (*distance)( const T&, const T& )>
 class VpTree
 {
 public:
@@ -132,7 +133,7 @@ public:
     }
     
     // Function that uses the tree to find the k nearest neighbors of target
-    void search(const T& target, int k, std::vector<T>* results, std::vector<double>* distances)
+    void search(const T& target, int k, std::vector<T>* results, std::vector<dt>* distances)
     {
         
         // Use a priority queue to store intermediate results on
@@ -159,13 +160,13 @@ public:
     
 private:
     std::vector<T> _items;
-    double _tau;
+    dt _tau;
     
     // Single node of a VP tree (has a point and radius; left children are closer to point than the radius)
     struct Node
     {
         int index;              // index of point in node
-        double threshold;       // radius(?)
+        dt threshold;       // radius(?)
         Node* left;             // points closer by than threshold
         Node* right;            // points farther away than threshold
         
@@ -181,10 +182,10 @@ private:
     
     // An item on the intermediate result queue
     struct HeapItem {
-        HeapItem( int index, double dist) :
+        HeapItem( int index, dt dist) :
         index(index), dist(dist) {}
         int index;
-        double dist;
+        dt dist;
         bool operator<(const HeapItem& o) const {
             return dist < o.dist;
         }
@@ -216,7 +217,7 @@ private:
             ITERS_buildfromPoints++;
             #endif
             // Choose an arbitrary point and move it to the start
-            int i = (int) ((double)rand() / RAND_MAX * (upper - lower - 1)) + lower;
+            int i = (int) ((dt)rand() / RAND_MAX * (upper - lower - 1)) + lower;
             std::swap(_items[lower], _items[i]);
             
             // Partition around the median distance
@@ -245,7 +246,7 @@ private:
         if(node == NULL) return;     // indicates that we're done here
         
         // Compute distance between target and current node
-        double dist = distance(_items[node->index], target);
+        dt dist = distance(_items[node->index], target);
 
         // If current node within radius tau
         if(dist < _tau) {

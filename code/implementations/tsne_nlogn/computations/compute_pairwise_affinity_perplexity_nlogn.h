@@ -1,14 +1,17 @@
+#ifndef COMPUTE_PAIRWISE_AFFINITY_PERPLEXITY_NLOGN_H
+#define COMPUTE_PAIRWISE_AFFINITY_PERPLEXITY_NLOGN_H
+
+#include "../../utils/data_type.h"
 #include <stdio.h>
-#include "comp.h"
 #include <vector>
 #include "../trees/vptree.h"
 
 using namespace std;
 
 // Compute pairwise affinity perplexity
-void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double* val_P,
+inline void compute_pairwise_affinity_perplexity_nlogn(dt* X, int N, int D, dt* val_P,
 										  unsigned int* row_P, unsigned int* col_P,
-										  double perplexity, unsigned int K)
+										  dt perplexity, unsigned int K)
 {
     #ifdef COUNTING
     int ITERS = 0;
@@ -17,24 +20,24 @@ void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double*
     vector<DataPoint> obj_X(N, DataPoint(D, -1, X));
     for(int n = 0; n < N; n++) obj_X[n] = DataPoint(D, n, X + n * D);
     tree->create(obj_X);
-    double* cur_P = (double*) malloc((N - 1) * sizeof(double));
+    dt* cur_P = (dt*) malloc((N - 1) * sizeof(dt));
     if(cur_P == NULL) { printf("Memory allocation failed!\n"); exit(1); }
     row_P[0] = 0;
     for(int n = 0; n < N; n++) row_P[n + 1] = row_P[n] + K;
 
 
     vector<DataPoint> indices;
-    vector<double> distances;
+    vector<dt> distances;
 	for (int n = 0; n < N; n++) {
         indices.clear();
         distances.clear();
         tree->search(obj_X[n], K + 1, &indices, &distances);
         bool found = false;
-        double beta = 1.0;
-        double min_beta = -DBL_MAX;
-        double max_beta =  DBL_MAX;
-        double tol = 1e-5;
-		double sum_P;
+        dt beta = 1.0;
+        dt min_beta = -DBL_MAX;
+        dt max_beta =  DBL_MAX;
+        dt tol = 1e-5;
+		dt sum_P;
 
 		int iter = 0;
 		while (found == false && iter < 200) {
@@ -45,12 +48,12 @@ void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double*
             // Compute entropy of current row
             sum_P = DBL_MIN;
             for(int m = 0; m < K; m++) sum_P += cur_P[m];
-            double H = .0;
+            dt H = .0;
             for(int m = 0; m < K; m++) H += beta * (distances[m + 1] * distances[m + 1] * cur_P[m]);
             H = (H / sum_P) + log(sum_P);
 
             // Evaluate whether the entropy is within the tolerance level
-            double Hdiff = H - log(perplexity);
+            dt Hdiff = H - log(perplexity);
             if(Hdiff < tol && -Hdiff < tol) {
                 found = true;
             }
@@ -90,3 +93,5 @@ void compute_pairwise_affinity_perplexity_nlogn(double* X, int N, int D, double*
     printf("it %d\nit_ec %d\nit_buildFromPoints %d\n", ITERS, ITERS_eucledianDistance, ITERS_buildfromPoints);
     #endif
 }
+
+#endif
