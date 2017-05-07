@@ -57,11 +57,11 @@ From now on all the computations are done at every iteration so should be counte
 
 * `gradient_computation`:
 	* create SPTree
-		* `adds = N*(d + 1)`, `divs = d * (1 + 3)`
+		* `adds = T*N*(d + 1)`, `divs = T*d * (1 + 3)`
 		* calls to insert `add = it_insert * d`; `mul = it_insert * 2 * d`
 		* calls to subdivide `add = it_sub * d`; `mul = it_sub * 2 * d`
-	* computeEdgeForces `add=N*K*3*d+N`;`mult=N*K*2*d`;`div=N*K`;
-	* finalize gradients `add = N*d`; `div = N*d`
+	* computeEdgeForces `add=T*(N*K*3*d+N)`;`mult=T*(N*K*2*d)`;`div=T*N*K`;
+	* finalize gradients `add = T*N*d`; `div = T*N*d`
 
 * `gradient_update`: same as n^2 case
 `add = N * d * 2 + N*d`;
