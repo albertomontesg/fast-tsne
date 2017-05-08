@@ -49,3 +49,6 @@ datum
 
 # Assembly code
 *.s
+
+#  Binary files
+bin

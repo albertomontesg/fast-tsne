@@ -32,7 +32,7 @@ $CC --version
 
 # Default compiler flags and source files
 COMPILER_FLAGS="-O3 -std=c++11 -march=native"
-SRC="tsne_exact.cpp"
+SRC="tsne_nlogn.cpp trees/sptree.cpp"
 
 TODAY=$(date +%Y%m%d_%H%M%S)
 
