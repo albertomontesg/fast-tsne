@@ -68,7 +68,7 @@ case $MODE in
                 echo "Running..."
                 for N in $(seq $START $INTERVAL $STOP); do
                     printf "$N";
-                    ./$BIN_COUNT $DATA_FILE result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$COUNT_FILE";
+                    # ./$BIN_COUNT $DATA_FILE result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$COUNT_FILE";
                     ./$BIN_BENCH $DATA_FILE result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$BENCH_FILE";
                     printf " DONE\n"
                 done;

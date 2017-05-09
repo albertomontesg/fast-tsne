@@ -31,14 +31,7 @@ def sum_operations(flops):
     return flops_count
 
 
-def sum_operations_by_function(
-        flops,
-        size,
-        function_list=("normalize", "compute_pairwise_affinity_perplexity",
-                       "symmetrize_affinities", "early_exageration",
-                       "compute_low_dimensional_affinities",
-                       "gradient_computation", "gradient_update",
-                       "normalize_2")):
+def sum_operations_by_function(flops, size, function_list=FUNCTION_NAMES):
     flops_count = np.zeros((size, len(function_list)), dtype="float")
 
     for i, func in enumerate(function_list):

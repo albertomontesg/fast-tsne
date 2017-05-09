@@ -8,7 +8,13 @@ mpl.rcParams['font.family'] = 'Roboto'
 mpl.rcParams['font.size'] = 15
 
 
-def plot(x, y, labels=None, title=None, ylim=2, legend=True):
+def plot(x,
+         y,
+         labels=None,
+         title=None,
+         ylim=2,
+         legend=True,
+         ylabel="flops/cycle"):
 
     lw = 2
     marker = "s"
@@ -16,7 +22,6 @@ def plot(x, y, labels=None, title=None, ylim=2, legend=True):
     labels_fontsize = 12
     fontsize = 20
     xlabel = "n"
-    ylabel = "flop/cycle"
 
     fig = plt.figure()
     if title:
@@ -49,6 +54,7 @@ def plot(x, y, labels=None, title=None, ylim=2, legend=True):
 
     # For runtime plots where on the yaxis there is an exponent, place the text
     # on the axis title
+    exponent_text = ''
     ax.ticklabel_format(axis='y', style='sci')
     plt.draw()
     if ax.yaxis.get_offset_text().get_text() != '':
@@ -57,7 +63,6 @@ def plot(x, y, labels=None, title=None, ylim=2, legend=True):
         exponent_text = '[{}]'.format(ax.yaxis.get_offset_text().get_text())
         ax.yaxis.offsetText.set_visible(False)
 
-    exponent_text = ''
     ax.set_title(
         '[{}]{}'.format(ylabel, exponent_text),
         fontsize=labels_fontsize,

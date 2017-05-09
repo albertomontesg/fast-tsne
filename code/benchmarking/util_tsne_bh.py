@@ -5,8 +5,8 @@ from util_tsne_exact import (sum_operations, sum_operations_by_function,
 
 FUNCTION_NAMES = ("normalize", "compute_pairwise_affinity_perplexity",
                   "symmetrize_affinities", "early_exageration",
-                  "compute_low_dimensional_affinities", "gradient_computation",
-                  "gradient_update", "normalize_2")
+                  "compute_low_dimensional_affinities", "create_tree",
+                  "gradient_computation", "gradient_update", "normalize_2")
 
 
 def read_iters(file_name):
@@ -84,6 +84,9 @@ def read_benchmark_bh(file_prefix, start=200, stop=4000, interval=200):
                 "div": T * N * (N - 1)
             }
         },
+        "create_tree": {
+            "add": np.zeros(1)
+        },
         "gradient_computation": {
             "add":
             T * N * (d + 1) + it_ins * d + it_sub * d + T *
@@ -107,7 +110,9 @@ def read_benchmark_bh(file_prefix, start=200, stop=4000, interval=200):
     flops_by_function_measure["compute_low_dimensional_affinities"] = \
         sum_operations_by_measure(flops["compute_low_dimensional_affinities"])
     flops_by_function = sum_operations_by_function(
-        flops_by_function_measure, size=N.shape[0])
+        flops_by_function_measure,
+        size=N.shape[0],
+        function_list=FUNCTION_NAMES)
 
     total_flops = sum_operations_by_measure(flops_by_function_measure)
     total_flops = sum_operations(total_flops)

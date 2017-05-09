@@ -1,4 +1,4 @@
-CC=g++-6
+CC=g++-4.9
 CFLAGS=-O3 -march=native
 SRC=tsne_exact.cpp
 BIN_DOUBLE=tsned.o

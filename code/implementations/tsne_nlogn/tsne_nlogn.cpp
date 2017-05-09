@@ -21,17 +21,18 @@ size_t ITERS_subdivide = 0;
 #include "../tsne_exact_optimizations/computations/gradient_update.h"
 #include "../tsne_exact_optimizations/computations/normalize.h"
 #include "computations/symmetrize_affinities_nlogn.h"
+#include "trees/sptree.h"
 
 #define NUM_RUNS 1
 
 #ifdef BENCHMARK
 double cycles = 0;
 double cycles_normalize = 0, cycles_perplexity = 0, cycles_symmetrize = 0;
-double cycles_early_exageration = 0;
+double cycles_early_exageration = 0, cycles_tree = 0;
 double cycles_ld_affinity = 0, cycles_gradient = 0, cycles_update = 0;
 double cycles_normalize_2 = 0;
 myInt64 start_normalize, start_perplexity, start_symmetrize;
-myInt64 start_early_exageration, start_ld_affinity;
+myInt64 start_early_exageration, start_ld_affinity, start_tree;
 myInt64 start_gradient, start_update, start_normalize_2;
 #endif
 
@@ -66,7 +67,8 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 
 	// Compute pairsiwe affinity with perplexity which include binary search
 	// for the best perplexity value
-	const unsigned int K = (unsigned int) (3 * perplexity);
+	const unsigned int K = min((unsigned int) (3 * perplexity),
+								(unsigned int) N);
 	dt* DD = (dt*) malloc(N * N * sizeof(dt));
 	unsigned int *row_P = (unsigned int*)    malloc((N + 1) * sizeof(unsigned int));
     unsigned int *col_P = (unsigned int*)    calloc(N * K, sizeof(unsigned int));
@@ -75,6 +77,10 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	if(row_P == NULL) { printf("[row_P] Memory allocation failed!\n"); exit(1); }
 	if(col_P == NULL) { printf("[col_P] Memory allocation failed!\n"); exit(1); }
 	if(val_P == NULL) { printf("[val_P] Memory allocation failed!\n"); exit(1); }
+
+	#ifdef DEBUG
+	printf("compute_pairwise_affinity_perplexity_nlogn\n");
+	#endif
 
 	#ifdef BENCHMARK
 	start_perplexity = start_tsc();
@@ -91,6 +97,10 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	// P and DD will not be remove because future use
 	#ifdef NUMERIC_CHECK
 	save_csr_data(row_P, col_P, val_P, N, N, "./datum/P_sparse");
+	#endif
+
+	#ifdef DEBUG
+	printf("symmetrize_affinities_nlogn\n");
 	#endif
 
 	// Symmetrize affinities
@@ -121,19 +131,30 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
     cycles_early_exageration += (double) stop_tsc(start_early_exageration);
     #endif
 
+	#ifdef DEBUG
+	printf("Allocate memory\n");
+	#endif
 
 	// Initialize Q low dimensionality affinity matrix and gradient dC
-	dt* Q = (dt*) malloc(N * N * sizeof(dt));
-	dt* dC = (dt*) malloc(N * no_dims * sizeof(dt));
-	dt* uY = (dt*) calloc(N * no_dims, sizeof(dt));
-	dt* gains = (dt*) malloc(N * no_dims * sizeof(dt));
-	mean = (dt*) malloc(no_dims * sizeof(dt));
+	dt* Q 		= (dt*) malloc(N * N * sizeof(dt));
+	dt* dC 		= (dt*) malloc(N * no_dims * sizeof(dt));
+	dt* uY 		= (dt*) calloc(N * no_dims, sizeof(dt));
+	dt* gains 	= (dt*) malloc(N * no_dims * sizeof(dt));
+	mean 		= (dt*) malloc(no_dims * sizeof(dt));
+	dt* pos_f 	= (dt*) malloc(N * D * sizeof(dt));
+	dt* neg_f 	= (dt*) malloc(N * D * sizeof(dt));
 	if(Q == NULL) { printf("[Q] Memory allocation failed!\n"); exit(1); }
 	if(dC == NULL) { printf("[dC] Memory allocation failed!\n"); exit(1); }
 	if(uY == NULL) { printf("[uY] Memory allocation failed!\n"); exit(1); }
 	if(gains == NULL) {printf("[gains] Memory allocation failed!\n"); exit(1);}
 	if(mean == NULL) { printf("[mean] Memory allocation failed!\n"); exit(1); }
+	if(pos_f == NULL) { printf("[pos_f] Memory allocation failed!\n"); exit(1);}
+	if(neg_f == NULL) { printf("[neg_f] Memory allocation failed!\n"); exit(1);}
 	for (int i = 0; i < N * no_dims; i++) gains[i] = 1.0;
+
+	#ifdef DEBUG
+	printf("Memory allocated\n");
+	#endif
 
 	// Training parameters
 	dt eta = 200.0;
@@ -141,6 +162,9 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	dt final_momentum = .8;
 	// Perform the main training loop
 	for (int iter = 0; iter < max_iter; iter++) {
+		#ifdef DEBUG
+		if (iter % 50 == 0) printf(".");
+		#endif
 
 		// Compute low dimensional affinities
 		// Reset DD to all 0s
@@ -161,14 +185,31 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		if (iter == 300) save_data(Q, N, N, "./datum/Q_300");
 		#endif
 
+		// QuadTree creation
+
+		#ifdef BENCHMARK
+		start_tree = start_tsc();
+		#endif
+		// Compute
+		// SPTree interface: (dimension, data, num_elements)
+		SPTree* tree = new SPTree(no_dims, Y, N);
+		// End compute
+		#ifdef BENCHMARK
+		cycles_tree += (double) stop_tsc(start_tree);
+		#endif
+
 		// Gradient Computation
 		// Make sure the gradient contains all zeros
 		for (int i = 0; i < N * no_dims; i++) dC[i] = 0.;
+		for (int i = 0; i < N * D; i++) {
+			pos_f[i] = 0.;
+			neg_f[i] = 0.;
+		}
 		#ifdef BENCHMARK
 		start_gradient = start_tsc();
 		#endif
 		// Compute
-		gradient_computation_nlogn(Y, row_P, col_P, val_P, N, no_dims, dC, theta);
+		gradient_computation_nlogn(Y, row_P, col_P, val_P, N, no_dims, dC, theta, pos_f, neg_f, tree);
 		// End compute
 		#ifdef BENCHMARK
 		cycles_gradient += (double) stop_tsc(start_gradient);
@@ -177,6 +218,8 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 		if (iter == 0) save_data(dC, N, no_dims, "./datum/dC_0");
 		if (iter == 300) save_data(dC, N, no_dims, "./datum/dC_300");
 		#endif
+		// Free tree
+		delete tree;
 
 		// Perform gradient update
 		#ifdef BENCHMARK
@@ -231,15 +274,16 @@ void run(double* X, int N, int D, double* Y, int no_dims, double perplexity,
 	#endif
 
 	#ifdef BENCHMARK
-	cycles += cycles_normalize + cycles_perplexity + cycles_symmetrize + cycles_early_exageration + cycles_ld_affinity + cycles_gradient + cycles_update + cycles_normalize_2;
+	cycles += cycles_normalize + cycles_perplexity + cycles_symmetrize + cycles_early_exageration + cycles_ld_affinity + cycles_tree + cycles_gradient + cycles_update + cycles_normalize_2;
 	#endif
 
-//	free(P); 		P = NULL;
 	free(DD); 		DD = NULL;
 	free(Q);		Q = NULL;
 	free(dC);		dC = NULL;
 	free(gains);	gains = NULL;
 	free(mean);		mean = NULL;
+	free(pos_f);	pos_f = NULL;
+	free(neg_f);	neg_f = NULL;
 }
 
 int main(int argc, char **argv) {
@@ -316,13 +360,14 @@ int main(int argc, char **argv) {
 	cycles_symmetrize /= (double) num_runs;
     cycles_early_exageration /= (double) num_runs;
 	cycles_ld_affinity /= (double) num_runs;
+	cycles_tree /= (double) num_runs;
 	cycles_gradient /= (double) num_runs;
 	cycles_update /= (double) num_runs;
 	cycles_normalize_2 /= (double) num_runs;
 	cycles /= (double) num_runs;
-	printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf\n", cycles_normalize,
+	printf("%lf %lf %lf %lf %lf %lf %lf %lf %lf %lf\n", cycles_normalize,
 		cycles_perplexity, cycles_symmetrize, cycles_early_exageration,
-        cycles_ld_affinity, cycles_gradient, cycles_update,
+        cycles_ld_affinity, cycles_tree, cycles_gradient, cycles_update,
         cycles_normalize_2, cycles);
     #endif
 
