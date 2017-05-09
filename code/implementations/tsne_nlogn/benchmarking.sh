@@ -32,7 +32,7 @@ $CC --version
 
 # Default compiler flags and source files
 COMPILER_FLAGS="-O3 -std=c++11 -march=native"
-SRC="tsne_exact.cpp"
+SRC="tsne_nlogn.cpp trees/sptree.cpp"
 
 TODAY=$(date +%Y%m%d_%H%M%S)
 
@@ -86,13 +86,13 @@ case $MODE in
                 echo "Running..."
                 for N in $(seq $START $INTERVAL $STOP); do
                     printf "$N ";
-                    ./bin/tsne_count_d.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@double@iters.txt"
+                    ./bin/tsne_count_d.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@double@iters.txt"
                     printf "."
-                    ./bin/tsne_count_f.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@float@iters.txt"
+                    ./bin/tsne_count_f.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@float@iters.txt"
                     printf "."
-                    ./bin/tsne_bench_d.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@double@cycles.txt"
+                    ./bin/tsne_bench_d.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@double@cycles.txt"
                     printf "."
-                    ./bin/tsne_bench_f.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@float@cycles.txt"
+                    ./bin/tsne_bench_f.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@float@cycles.txt"
                     printf " DONE\n"
                 done;
                 echo "Finish Successfully"
@@ -113,17 +113,17 @@ case $MODE in
                 echo "Running..."
                 for N in $(seq $START $INTERVAL $STOP); do
                     printf "$N ";
-                    ./bin/tsne_cound_1.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS1@double@iters.txt"
+                    ./bin/tsne_cound_1.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS1@double@iters.txt"
                     printf "."
-                    ./bin/tsne_cound_2.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS2@double@iters.txt"
+                    ./bin/tsne_cound_2.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS2@double@iters.txt"
                     printf "."
-                    ./bin/tsne_cound_3.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS3@double@iters.txt"
+                    ./bin/tsne_cound_3.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS3@double@iters.txt"
                     printf "."
-                    ./bin/tsne_bench_1.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS1@double@cycles.txt"
+                    ./bin/tsne_bench_1.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS1@double@cycles.txt"
                     printf "."
-                    ./bin/tsne_bench_2.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS2@double@cycles.txt"
+                    ./bin/tsne_bench_2.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS2@double@cycles.txt"
                     printf "."
-                    ./bin/tsne_bench_3.o $DATA_FILE /tmp/result.dat $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS3@double@cycles.txt"
+                    ./bin/tsne_bench_3.o $DATA_FILE /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> "$FILE_PREFIX@$FLAGS3@double@cycles.txt"
                     printf " DONE\n"
                 done;
                 echo "Finish Successfully"

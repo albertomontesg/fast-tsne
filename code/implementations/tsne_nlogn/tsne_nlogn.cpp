@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
 		// Randomly intialize arrays
 		for (int i = 0; i < N * D; i++) 		X[i] = (dt) data[i];
 	    for (int i = 0; i < N * no_dims; i++) 	Y[i] = randn() * .0001;
-		run(data, N, D, Y, no_dims, perplexity, max_iter, 0.5); // TODO: parameter theta (0.01)
+		run(data, N, D, Y, no_dims, perplexity, max_iter, 0.5);
 	}
 
 
