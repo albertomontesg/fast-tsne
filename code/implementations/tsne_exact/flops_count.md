@@ -57,4 +57,4 @@ From gains, all the operations are counted as multiplications.
 
 * `normalize`:
 `add = 2 * N * d`;
-`div = D + N * d`;
+`div = d + N * d`;
