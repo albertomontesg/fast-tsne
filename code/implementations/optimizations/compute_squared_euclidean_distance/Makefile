@@ -10,7 +10,7 @@ compile:
 	$(CC) $(CFLAGS) $(SRC) -o ./$(BIN)
 
 benchmark: compile
-	./$(BIN) >> $(OUT_FILE)
+	./$(BIN) > $(OUT_FILE)
 
 clean:
 	if [ -f $(BIN) ] ; then rm $(BIN) ; fi;

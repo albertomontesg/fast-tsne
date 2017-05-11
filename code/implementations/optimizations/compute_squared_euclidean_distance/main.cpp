@@ -8,17 +8,19 @@
 #include "../../utils/data_type.h"
 #include "compute_squared_euclidean_distance.h"
 
+#define SINGLE_PRECISION
 #define NUM_RUNS    10
 #define CYCLES_REQUIRED 1e6
-#define N_START     200
-#define N_STOP      2000
-#define N_INTERVAL  200
+#define N_START     8
+#define N_STOP      8192
+#define N_INTERVAL  2
 #define EPS         1e-5
 
-int D = 28*28;
+int D = 2;
+
 
 /* prototype of the function you need to optimize */
-typedef void(*comp_func)(dt *, int, int, dt *);
+typedef void(*comp_func)(float *, int, int, float *);
 
 comp_func userFuncs[32];
 char *funcNames[32];
@@ -31,11 +33,20 @@ void add_function(comp_func f, char *name);
 * Use add_function(func, description) to add your own functions
 */
 void register_functions() {
-    add_function(&base_version, "Base Version");
+    add_function(&base_version, "base_version");
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    add_function(&compute_squared_euclidean_distance, "compute_squared_euclidean_distance");
+    add_function(&blocking_4, "blocking_4");
+    // add_function(&blocking_8, "blocking_8");
+    // add_function(&blocking_16, "blocking_16");
+    add_function(&blocking_32, "blocking_32");
+    // add_function(&blocking_64, "blocking_64");
+    add_function(&blocking_32_block_4, "blocking_32_block_4");
+    add_function(&blocking_32_block_4_unfold1_sr, "blocking_32_block_4_unfold1_sr");
+    add_function(&blocking_32_block_4_unfold2_sr, "blocking_32_block_4_unfold2_sr");
+    add_function(&blocking_32_block_4_unfold2_sr_vec, "blocking_32_block_4_unfold2_sr_vec");
+    // add_function(&blocking_4_unfoold_sr, "blocking_4_unfoold_sr");
 }
 
 /*
@@ -57,12 +68,12 @@ void add_function(comp_func f, char *name)
   numFuncs++;
 }
 
-void build(dt ** d, int row, int col) {
-    *d = (dt*) malloc(row * col * sizeof(dt));
+void build(float ** d, int row, int col) {
+    *d = (float*) malloc(row * col * sizeof(float));
     rand_matrix(*d, row, col);
 }
 
-void destroy(dt* d) {
+void destroy(float* d) {
     free(d);
     d = NULL;
 }
@@ -76,7 +87,7 @@ double perf_test(comp_func f, int n) {
 
 
     // Create the input and output arrays
-    dt *X, *DD;
+    float *X, *DD;
     // Input:
     build(&X, n, D);
     build(&DD, n, n);
@@ -119,22 +130,22 @@ int main(int argc, char **argv) {
 
 
     // Check the correct output of the functions
-    int N = 600;
-    dt *X, *DD, *DD_correct;
+    int N = 512;
+    float *X, *DDr, *DDc;
     build(&X, N, D);
-    build(&DD_correct, N, N);
-    build(&DD, N, N);
+    build(&DDc, N, N);
+    build(&DDr, N, N);
     comp_func base_f = userFuncs[0];
-    base_f(X, N, D, DD_correct);
+    base_f(X, N, D, DDc);
 
     double error = 0.;
     for (int i = 1; i < numFuncs; i++) {
         comp_func f = userFuncs[i];
-        f(X, N, D, DD);
+        f(X, N, D, DDr);
         for (int j = 0; j < N*N; j++) {
-            error = fabs(DD[j] - DD_correct[j]);
+            error = fabs(DDr[j] - DDc[j]);
             if (error > EPS) {
-                printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position %d\n", funcNames[i], j);
+                printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position %d with n=%d\nError: %lf != %lf\n", funcNames[i], j, N, DDr[j], DDc[j]);
                 exit(1);
             }
         }
@@ -144,7 +155,7 @@ int main(int argc, char **argv) {
     printf("N");
     for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
     printf("\n");
-    for (int n = n_start; n <= n_stop; n += n_interval) {
+    for (int n = n_start; n <= n_stop; n *= n_interval) {
         printf("%d", n);
 
         for (int i = 0; i < numFuncs; i++) {
