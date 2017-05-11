@@ -3,7 +3,6 @@
 
 #include "../../utils/data_type.h"
 
-// Compute squared euclidean disctance for all pairs of vectors X_i X_j
 inline void compute_squared_euclidean_distance(dt* X, int N, int D, dt* DD) {
 	const dt* XnD = X;
     for(int n = 0; n < N; ++n, XnD += D) {
@@ -22,6 +21,7 @@ inline void compute_squared_euclidean_distance(dt* X, int N, int D, dt* DD) {
     }
 }
 
+// Compute squared euclidean disctance for all pairs of vectors X_i X_j
 inline void base_version(dt* X, int N, int D, dt* DD) {
 	const dt* XnD = X;
     for(int n = 0; n < N; ++n, XnD += D) {
