@@ -1,4 +1,9 @@
-CC=g++-4.9
+ifeq ($(OS),Darwin)
+    CC=g++-4.9
+else
+    CC=g++
+endif
+
 CFLAGS=-O3 -march=native -std=c++11
 SRC=tsne_nlogn.cpp ./trees/sptree.cpp
 BIN_DOUBLE=bin/tsne_d.o

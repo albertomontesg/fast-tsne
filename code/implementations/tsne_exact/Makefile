@@ -1,4 +1,9 @@
-CC=g++-6
+ifeq ($(OS),Darwin)
+    CC=g++-4.9
+else
+    CC=g++
+endif
+
 CFLAGS=-O3 -march=native
 SRC=tsne_exact.cpp ../utils/io.c
 BIN=tsne.o

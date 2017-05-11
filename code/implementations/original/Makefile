@@ -1,4 +1,9 @@
-CC=g++
+ifeq ($(OS),Darwin)
+    CC=g++-4.9
+else
+    CC=g++
+endif
+
 CFLAGS=-O3 -march=native
 BIN=bh_tsne.o
 
