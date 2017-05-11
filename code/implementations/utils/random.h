@@ -18,4 +18,16 @@ dt randn() {
 	return x;
 }
 
+void randn_matrix(dt* m, size_t row, size_t col) {
+	for (size_t i = 0; i < row*col; i++) {
+		m[i] = randn();
+	}
+}
+
+void rand_matrix(dt* m, size_t row, size_t col) {
+	for (size_t i = 0; i < row*col; i++) {
+		m[i] = static_cast<double>(rand() + 1) / RAND_MAX;
+	}
+}
+
 #endif

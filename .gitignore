@@ -43,6 +43,7 @@ private
 
 # Python Notebook
 .ipynb_checkpoints
+__pycache__
 
 # Resulting binary files
 datum
