@@ -134,7 +134,8 @@ int main(int argc, char **argv) {
         for (int j = 0; j < N*N; j++) {
             error = fabs(DD[j] - DD_correct[j]);
             if (error > EPS) {
-                printf("ERROR!!!! the results for the %s th function are different to the correct implementation\n", funcNames[i]);
+                printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position %d\n", funcNames[i], j);
+                exit(1);
             }
         }
     }
