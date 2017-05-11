@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "data_type.h"
+#include <string.h>
 
 int reverse_int(int i) {
     unsigned char c1, c2, c3, c4;
@@ -15,9 +16,7 @@ int reverse_int(int i) {
 
 // Function that loads data from a t-SNE file
 // Note: this function does a malloc that should be freed elsewhere
-bool load_data(double* data, int n, int* d, char* data_file) {
-
-
+bool load_data(dt* data, int n, int* d, char* data_file) {
 
 	// Open file, read first 2 integers, allocate memory, and read the data
     FILE *h;
@@ -58,7 +57,7 @@ bool load_data(double* data, int n, int* d, char* data_file) {
     fread(raw_data, sizeof(uint8_t), n * *d, h);
 
     for (int i = 0; i < *d * n; i++) {
-        data[i] = ((double) raw_data[i]) / 255.;
+        data[i] = ((dt) raw_data[i]) / 255.;
     }
 
     // Showing image
@@ -96,6 +95,32 @@ void save_data(dt* data, int n, int d, char* data_file) {
     #ifdef DEBUG
 	printf("Wrote the %i x %i data matrix successfully!\n", n, d);
     #endif
+}
+
+bool validate_data(dt* data, int n, int d, char* ref_file){
+    dt *ref_data = (dt*) malloc(d * n * sizeof(dt));
+
+    int* ref_d; *ref_d = -1;
+    if(!load_data(ref_data, n, ref_d, ref_file)){
+        printf("Error: could not open reference file (%s).\n", ref_file);
+        return false;
+    }
+    if(*ref_d != d){
+        printf("Error: non matching dimensions between output and reference file (%s).\n", ref_file);
+        printf("Output dimension data: %d  Output dimension reference file: %d. \n", d, *ref_d);
+        return false;
+    }
+
+    for(int i=0; i<n*d; i++){
+        if(data[i] != ref_data[i]){
+            printf("Calculated data does not match reference! \n");
+            printf("data point %d, dimension %d: \n", i/n, i%d);
+            printf("-reference:  %f\n", ref_data[i]);
+            printf("-calculated: %f\n\n", data[i]);
+            return false;
+        }
+    }
+    return true;
 }
 
 #endif
