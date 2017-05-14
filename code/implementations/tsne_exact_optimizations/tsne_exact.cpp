@@ -234,6 +234,7 @@ int main(int argc, char **argv) {
     perp:       perplexity              (best value: 50)
     o_dim:      output dimensionality   (best value: 2)
     max_iter:   max iterations          (best value: 1000)
+    inputDim:   input dimensionality of data; optional defaults to 784
     */
 
     // Parse arguments
@@ -243,6 +244,9 @@ int main(int argc, char **argv) {
     dt perplexity = (dt) atof(argv[4]);
     int no_dims = atoi(argv[5]);
     int max_iter = atoi(argv[6]);
+    int inputDim = 784;
+    if (argc > 7)
+    	inputDim = atoi(argv[7]);
 
 	// Set random seed
     int rand_seed = 23;
@@ -256,12 +260,13 @@ int main(int argc, char **argv) {
 	printf("no_dims = %d\n", no_dims);
 	printf("max_iter = %d\n", max_iter);
 	printf("Using random seed: %d\n", rand_seed);
+	printf("Input Dim (given): %d\n", inputDim);
 	#endif
 
 	// Define some variables
 	int D;
-	double *data = (double*) malloc(N * 784 * sizeof(double));
-	dt* X = (dt*) malloc(N * 784 * sizeof(dt));
+	dt* data = (dt*) malloc(N * inputDim * sizeof(double));
+	dt* X = (dt*) malloc(N * inputDim * sizeof(dt));
     dt* Y = (dt*) malloc(N * no_dims * sizeof(dt));
     if(data == NULL) { printf("[data] Memory allocation failed!\n"); exit(1); }
     if(X == NULL) { printf("[X] Memory allocation failed!\n"); exit(1); }
