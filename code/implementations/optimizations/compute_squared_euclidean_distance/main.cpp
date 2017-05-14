@@ -10,13 +10,12 @@
 #include "../../utils/data_type.h"
 #include "compute_squared_euclidean_distance.h"
 
-#define SINGLE_PRECISION
 #define NUM_RUNS    10
 #define CYCLES_REQUIRED 1e6
-#define N_START     8
+#define N_START     4
 #define N_STOP      8192
 #define N_INTERVAL  2
-#define EPS         1e-5
+#define EPS         1e-6
 
 int D = 2;
 
@@ -39,16 +38,15 @@ void register_functions() {
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    add_function(&blocking_4, "blocking_4");
+    // add_function(&blocking_4, "blocking_4");
     // add_function(&blocking_8, "blocking_8");
     // add_function(&blocking_16, "blocking_16");
     add_function(&blocking_32, "blocking_32");
     // add_function(&blocking_64, "blocking_64");
-    add_function(&blocking_32_block_4, "blocking_32_block_4");
+    // add_function(&blocking_32_block_4, "blocking_32_block_4");
     add_function(&blocking_32_block_4_unfold1_sr, "blocking_32_block_4_unfold1_sr");
     add_function(&blocking_32_block_4_unfold2_sr, "blocking_32_block_4_unfold2_sr");
     add_function(&blocking_32_block_4_unfold2_sr_vec, "blocking_32_block_4_unfold2_sr_vec");
-    // add_function(&blocking_4_unfoold_sr, "blocking_4_unfoold_sr");
 }
 
 /*
@@ -137,13 +135,13 @@ int main(int argc, char **argv) {
     float *X, *DDr, *DDc;
     build(&X, N, D);
     build(&DDc, N, N);
-    build(&DDr, N, N);
     comp_func base_f = userFuncs[0];
     base_f(X, N, D, DDc);
 
     double error = 0.;
     for (int i = 1; i < numFuncs; i++) {
         comp_func f = userFuncs[i];
+        build(&DDr, N, N);
         f(X, N, D, DDr);
         for (int j = 0; j < N*N; j++) {
             error = fabs(DDr[j] - DDc[j]);
