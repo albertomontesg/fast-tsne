@@ -43,6 +43,9 @@ counting:
 run:
 	./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
 
+run_other_data:
+	./$(BIN_DOUBLE) ../../generate_test_data/10_2000_10000 result_d_other.dat 1000 50 2 1000 2000
+
 clean:
 	rm *.o
 	rm *.dat
