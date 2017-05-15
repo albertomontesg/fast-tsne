@@ -5,7 +5,7 @@ else
 endif
 
 CFLAGS=-O3 -march=native
-SRC=tsne_exact.cpp ../utils/io.c
+SRC=tsne_exact.cpp
 BIN=tsne.o
 
 # # Running variables
