@@ -8,7 +8,7 @@
 inline void blocking_32_block_4_unfold2_sr_vec(float* X, int N, int D, float* DD) {
 	// Block size
 	const int Bd = 32; // Desired Block size
-	const int B =  (N > Bd) ? Bd : N;
+	const int B =  (N >= Bd) ? Bd : N;
 	const int K =  (N > 4) ? 4: N;
     // printf("ping %d\n", N);
 	// Loops for block size 32
@@ -17,68 +17,63 @@ inline void blocking_32_block_4_unfold2_sr_vec(float* X, int N, int D, float* DD
 
 			// Loops for microblocks of size 4
 			for (int iK = iB; iK < iB + B; iK += K) {
-				for (int jK = jB; jK < jB + B; jK += K) {
+				for (int jK = iK; jK < jB + B; jK += K) {
 					// In case the result DD and symetric are the same
 					if (iK == jK) {
 						// Case where the resulting block of BxB needs only to
 						// be computed the upper triangle part
-						const float* XnD = X + iK * D;
+                        const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
 						float* DDij = DD + iK * N + jK;
 
-						// Unfold the `m` and `d` loops
-						float sum_00 = 0, sum_01 = 0, sum_02 = 0, sum_03 = 0;
-						float sum_11 = 0, sum_12 = 0, sum_13 = 0;
-						float sum_22 = 0, sum_23 = 0;
-						float sum_33 = 0;
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
 
-						float Xn_01 = XnD[0], Xn_02 = XnD[1];
-						float Xn_11 = XnD[D], Xn_12 = XnD[1+D];
-						float Xn_21 = XnD[2*D], Xn_22 = XnD[1+2*D];
-						float Xn_31 = XnD[3*D], Xn_32 = XnD[1+3*D];
+						__m256 Xm = _mm256_loadu_ps(XmD);
 
-						float diff_011 = Xn_01 - Xn_11, diff_012 = Xn_02 - Xn_12;
-						float diff_021 = Xn_01 - Xn_21, diff_022 = Xn_02 - Xn_22;
-						float diff_031 = Xn_01 - Xn_31, diff_032 = Xn_02 - Xn_32;
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
 
-						float diff_121 = Xn_11 - Xn_21, diff_122 = Xn_12 - Xn_22;
-						float diff_131 = Xn_11 - Xn_31, diff_132 = Xn_12 - Xn_32;
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
 
-						float diff_231 = Xn_21 - Xn_31, diff_232 = Xn_22 - Xn_32;
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
 
-						sum_01 += diff_011 * diff_011;
-						sum_02 += diff_021 * diff_021;
-						sum_03 += diff_031 * diff_031;
-						sum_12 += diff_121 * diff_121;
-						sum_13 += diff_131 * diff_131;
-						sum_23 += diff_231 * diff_231;
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
 
-						sum_01 += diff_012 * diff_012;
-						sum_02 += diff_022 * diff_022;
-						sum_03 += diff_032 * diff_032;
-						sum_12 += diff_122 * diff_122;
-						sum_13 += diff_132 * diff_132;
-						sum_23 += diff_232 * diff_232;
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
 
-						// Store the results on the matrix
-						DDij[0] = sum_00;
-						DDij[1] = sum_01;
-						DDij[2] = sum_02;
-						DDij[3] = sum_03;
-						DDij[N] = sum_01;
-						DDij[N+1] = sum_11;
-						DDij[N+2] = sum_12;
-						DDij[N+3] = sum_13;
-						DDij[2*N] = sum_02;
-						DDij[2*N+1] = sum_12;
-						DDij[2*N+2] = sum_22;
-						DDij[2*N+3] = sum_23;
-						DDij[3*N] = sum_03;
-						DDij[3*N+1] = sum_13;
-						DDij[3*N+2] = sum_23;
-						DDij[3*N+3] = sum_33;
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						_mm_store_ps(DDij, norm_0);
+						_mm_store_ps(DDij+N, norm_1);
+						_mm_store_ps(DDij+2*N, norm_2);
+						_mm_store_ps(DDij+3*N, norm_3);
 
 					}
-					else {
+					else if (jK > iK) {
 						// In this case, the block has to be computed all and the symmetric position is not inside the block.
 						const float* XnD = X + iK * D;
 						const float* XmD = X + jK * D;
@@ -268,13 +263,13 @@ inline void blocking_32_block_4(float* X, int N, int D, float* DD) {
 							}
 						}
 					}
-					else {
+					else if (jK > iK) {
 						// In this case, the block has to be computed all and the symmetric position is not inside the block.
 						const float* XnD = X + iK*D;
 						for (int n = iK; n < iK + K; n++, XnD += D) {
-							const float* XmD = X + jB*D;
-							float* curr_elem = &DD[n*N + jB];
-		                    float* curr_elem_sym = &DD[jB*N + n];
+							const float* XmD = X + jK * D;
+							float* curr_elem = &DD[n*N + jK];
+		                    float* curr_elem_sym = &DD[jK*N + n];
 							for (int m = jK; m < jK + K; m++, XmD += D, curr_elem_sym += N, curr_elem++) {
 		                        float sum = 0.;
 								for (int d = 0; d < D; d++) {
@@ -327,7 +322,7 @@ inline void blocking_32_block_4_unfold1_sr(float* X, int N, int D, float* DD) {
 							}
 						}
 					}
-					else {
+					else if (jK > iK) {
 						// In this case, the block has to be computed all and the symmetric position is not inside the block.
 						const float* XnD = X + iK * D;
 
@@ -391,7 +386,7 @@ inline void blocking_32_block_4_unfold2_sr(float* X, int N, int D, float* DD) {
 
 			// Loops for microblocks of size 4
 			for (int iK = iB; iK < iB + B; iK += K) {
-				for (int jK = jB; jK < jB + B; jK += K) {
+				for (int jK = iK; jK < jB + B; jK += K) {
 					// In case the result DD and symetric are the same
 					if (iK == jK) {
 						// Case where the resulting block of BxB needs only to
@@ -452,7 +447,7 @@ inline void blocking_32_block_4_unfold2_sr(float* X, int N, int D, float* DD) {
 						DDij[3*N+3] = sum_33;
 
 					}
-					else {
+					else if (jK > iK) {
 						// In this case, the block has to be computed all and the symmetric position is not inside the block.
 						const float* XnD = X + iK * D;
 						const float* XmD = X + jK * D;
