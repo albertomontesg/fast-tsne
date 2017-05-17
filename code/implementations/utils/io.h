@@ -74,7 +74,7 @@ bool load_data(dt* data, int n, int* d, char* data_file) {
             printf("\n");
         }
     }
-
+    printf("before returning loaded data\n");
     free(raw_data); raw_data = NULL;
     return true;
 }
@@ -100,14 +100,15 @@ void save_data(dt* data, int n, int d, char* data_file) {
 bool validate_data(dt* data, int n, int d, char* ref_file){
     dt *ref_data = (dt*) malloc(d * n * sizeof(dt));
 
-    int* ref_d; *ref_d = -1;
-    if(!load_data(ref_data, n, ref_d, ref_file)){
+    int ref_d; ref_d = -1;
+    if(!load_data(ref_data, n, &ref_d, ref_file)){
         printf("Error: could not open reference file (%s).\n", ref_file);
         return false;
     }
-    if(*ref_d != d){
+
+    if(ref_d != d){
         printf("Error: non matching dimensions between output and reference file (%s).\n", ref_file);
-        printf("Output dimension data: %d  Output dimension reference file: %d. \n", d, *ref_d);
+        printf("Output dimension data: %d  Output dimension reference file: %d. \n", d, ref_d);
         return false;
     }
 
@@ -120,6 +121,7 @@ bool validate_data(dt* data, int n, int d, char* ref_file){
             return false;
         }
     }
+    free(ref_data);
     return true;
 }
 
