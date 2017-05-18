@@ -5,19 +5,20 @@
 #include <stdio.h>
 #include <immintrin.h>
 
-inline void blocking_32_block_4_unfold2_sr_vec(float* X, int N, int D, float* DD) {
+inline void blocking_32_block_4_unfold_sr_vec(float* X, int N, int D, float* DD) {
 	// Block size
 	const int Bd = 32; // Desired Block size
 	const int B =  (N >= Bd) ? Bd : N;
 	const int K =  (N > 4) ? 4: N;
-    // printf("ping %d\n", N);
+
+
 	// Loops for block size 32
 	for (int iB = 0; iB < N; iB += B) {
 		for (int jB = iB; jB < N; jB += B) {
 
 			// Loops for microblocks of size 4
 			for (int iK = iB; iK < iB + B; iK += K) {
-				for (int jK = iK; jK < jB + B; jK += K) {
+				for (int jK = jB; jK < jB + B; jK += K) {
 					// In case the result DD and symetric are the same
 					if (iK == jK) {
 						// Case where the resulting block of BxB needs only to
@@ -180,9 +181,6 @@ inline void blocking_4_unfoold_sr(float* X, int N, int D, float* DD) {
 
 					// Unfold the `m` and `d` loops
 					float sum_0 = 0, sum_1 = 0, sum_2 = 0, sum_3 = 0;
-					// float* sum_10 = 0, sum_11 = 0, sum_12 = 0, sum_13 = 0;
-					// float* sum_20 = 0, sum_21 = 0, sum_22 = 0, sum_23 = 0;
-					// float* sum_30 = 0, sum_31 = 0, sum_32 = 0, sum_33 = 0;
 
 					float Xn_1 = XnD[0], Xn_2 = XnD[1];
 					float Xm_01 = XmD[0], Xm_02 = XmD[1];
@@ -212,16 +210,6 @@ inline void blocking_4_unfoold_sr(float* X, int N, int D, float* DD) {
 					*(curr_elem_sym + 1 * N) = sum_1;
 					*(curr_elem_sym + 2 * N) = sum_2;
 					*(curr_elem_sym + 3 * N) = sum_3;
-
-					// for (int m = j; m < j + B; m++, XmD += D, curr_elem_sym += N, curr_elem++) {
-                    //     float sum = 0.;
-					// 	for (int d = 0; d < D; d++) {
-					// 		float dif = XnD[d] - XmD[d];
-					// 		sum += dif * dif;
-					// 	}
-					// 	*curr_elem = sum;
-					// 	*curr_elem_sym = sum;
-					// }
 				}
 			}
 
@@ -234,7 +222,8 @@ inline void blocking_32_block_4(float* X, int N, int D, float* DD) {
 	const int Bd = 32; // Desired Block size
 	const int B =  (N > Bd) ? Bd : N;
 	const int K = 4;
-    // printf("ping %d\n", N);
+
+
 	// Loops for block size 32
 	for (int iB = 0; iB < N; iB += B) {
 		for (int jB = iB; jB < N; jB += B) {
@@ -288,12 +277,13 @@ inline void blocking_32_block_4(float* X, int N, int D, float* DD) {
 	} // End of B loop
 }
 
-inline void blocking_32_block_4_unfold1_sr(float* X, int N, int D, float* DD) {
+inline void blocking_32_block_4_unfold_sr(float* X, int N, int D, float* DD) {
 	// Block size
 	const int Bd = 32; // Desired Block size
 	const int B =  (N > Bd) ? Bd : N;
 	const int K = 4;
-    // printf("ping %d\n", N);
+
+
 	// Loops for block size 32
 	for (int iB = 0; iB < N; iB += B) {
 		for (int jB = iB; jB < N; jB += B) {
@@ -301,92 +291,6 @@ inline void blocking_32_block_4_unfold1_sr(float* X, int N, int D, float* DD) {
 			// Loops for microblocks of size 4
 			for (int iK = iB; iK < iB + B; iK += K) {
 				for (int jK = jB; jK < jB + B; jK += K) {
-					// In case the result DD and symetric are the same
-					if (iK == jK) {
-						// Case where the resulting block of BxB needs only to be
-						// computed the upper triangle part
-						const float* XnD = X + iK*D;
-						for (int n = iK; n < iK + K; n++, XnD += D){
-							const float* XmD = XnD + D;
-							float* curr_elem = &DD[n*N + n];
-							*curr_elem = 0.0;
-							float* curr_elem_sym = curr_elem + N;
-							for (int m = n + 1; m < jK + K; m++, XmD += D, curr_elem_sym += N) {
-								float sum = 0.;
-								for (int d = 0; d < D; d++) {
-									float dif = XnD[d] - XmD[d];
-									sum += dif * dif;
-								}
-								*(++curr_elem) = sum;
-								*curr_elem_sym = sum;
-							}
-						}
-					}
-					else if (jK > iK) {
-						// In this case, the block has to be computed all and the symmetric position is not inside the block.
-						const float* XnD = X + iK * D;
-
-						for (int n = iK; n < iK + K; n++, XnD += D) {
-							const float* XmD = X + jK * D;
-							float* curr_elem = &DD[n*N + jK];
-							float* curr_elem_sym = &DD[jK * N + n];
-
-							// Unfold the `m` and `d` loops
-							float sum_0 = 0, sum_1 = 0, sum_2 = 0, sum_3 = 0;
-							// float* sum_10 = 0, sum_11 = 0, sum_12 = 0, sum_13 = 0;
-							// float* sum_20 = 0, sum_21 = 0, sum_22 = 0, sum_23 = 0;
-							// float* sum_30 = 0, sum_31 = 0, sum_32 = 0, sum_33 = 0;
-
-							float Xn_1 = XnD[0], Xn_2 = XnD[1];
-							float Xm_01 = XmD[0], Xm_02 = XmD[1];
-							float Xm_11 = XmD[0+D], Xm_12 = XmD[1+D];
-							float Xm_21 = XmD[0+2*D], Xm_22 = XmD[1+2*D];
-							float Xm_31 = XmD[0+3*D], Xm_32 = XmD[1+3*D];
-
-							float diff_01 = Xm_01 - Xn_1, diff_02 = Xm_02 - Xn_2;
-							float diff_11 = Xm_11 - Xn_1, diff_12 = Xm_12 - Xn_2;
-							float diff_21 = Xm_21 - Xn_1, diff_22 = Xm_22 - Xn_2;
-							float diff_31 = Xm_31 - Xn_1, diff_32 = Xm_32 - Xn_2;
-							sum_0 += diff_01 * diff_01;
-							sum_1 += diff_11 * diff_11;
-							sum_2 += diff_21 * diff_21;
-							sum_3 += diff_31 * diff_31;
-							sum_0 += diff_02 * diff_02;
-							sum_1 += diff_12 * diff_12;
-							sum_2 += diff_22 * diff_22;
-							sum_3 += diff_32 * diff_32;
-
-							curr_elem[0] = sum_0;
-							curr_elem[1] = sum_1;
-							curr_elem[2] = sum_2;
-							curr_elem[3] = sum_3;
-
-							curr_elem_sym[0] = sum_0;
-							curr_elem_sym[1*N] = sum_1;
-							curr_elem_sym[2*N] = sum_2;
-							curr_elem_sym[3*N] = sum_3;
-						}
-					}
-				}
-			} // End of K loop
-
-		}
-	} // End of B loop
-}
-
-inline void blocking_32_block_4_unfold2_sr(float* X, int N, int D, float* DD) {
-	// Block size
-	const int Bd = 32; // Desired Block size
-	const int B =  (N > Bd) ? Bd : N;
-	const int K = 4;
-    // printf("ping %d\n", N);
-	// Loops for block size 32
-	for (int iB = 0; iB < N; iB += B) {
-		for (int jB = iB; jB < N; jB += B) {
-
-			// Loops for microblocks of size 4
-			for (int iK = iB; iK < iB + B; iK += K) {
-				for (int jK = iK; jK < jB + B; jK += K) {
 					// In case the result DD and symetric are the same
 					if (iK == jK) {
 						// Case where the resulting block of BxB needs only to
@@ -480,15 +384,18 @@ inline void blocking_32_block_4_unfold2_sr(float* X, int N, int D, float* DD) {
 						float diff_121 = Xm_21 - Xn_11, diff_122 = Xm_22 - Xn_12;
 						float diff_131 = Xm_31 - Xn_11, diff_132 = Xm_32 - Xn_12;
 
+
 						float diff_201 = Xm_01 - Xn_21, diff_202 = Xm_02 - Xn_22;
 						float diff_211 = Xm_11 - Xn_21, diff_212 = Xm_12 - Xn_22;
 						float diff_221 = Xm_21 - Xn_21, diff_222 = Xm_22 - Xn_22;
 						float diff_231 = Xm_31 - Xn_21, diff_232 = Xm_32 - Xn_22;
 
+
 						float diff_301 = Xm_01 - Xn_31, diff_302 = Xm_02 - Xn_32;
 						float diff_311 = Xm_11 - Xn_31, diff_312 = Xm_12 - Xn_32;
 						float diff_321 = Xm_21 - Xn_31, diff_322 = Xm_22 - Xn_32;
 						float diff_331 = Xm_31 - Xn_31, diff_332 = Xm_32 - Xn_32;
+
 
 						sum_00 += diff_001 * diff_001;
 						sum_01 += diff_011 * diff_011;
@@ -568,13 +475,232 @@ inline void blocking_32_block_4_unfold2_sr(float* X, int N, int D, float* DD) {
 	} // End of B loop
 }
 
+inline void blocking_16_block_8_unfold_sr(float* X, int N, int D, float* DD) {
+	// Block size
+	const int Bd = 16; // Desired Block size
+	const int B =  (N > Bd) ? Bd : N;
+	const int K = 8;
+
+
+	// Loops for block size 16
+	for (int iB = 0; iB < N; iB += B) {
+		for (int jB = iB; jB < N; jB += B) {
+
+			// Loops for microblocks of size 8
+			for (int iK = iB; iK < iB + B; iK += K) {
+				for (int jK = jB; jK < jB + B; jK += K) {
+					// In case the result DD and symetric are the same
+					if (iK == jK) {
+						const float* XnD = X + iK*D;
+						for (int n = iK; n < iK+K; n++, XnD += D) {
+							const float* XmD = XnD + D;
+							float* curr_elem = &DD[n*N + n];
+							*curr_elem = 0.0;
+							float* curr_elem_sym = curr_elem + N;
+
+							for (int m = n + 1; m < jK + K; m++, XmD += D, curr_elem_sym += N) {
+								float sum = 0.;
+								for (int d = 0; d < D; d++) {
+									float dif = XnD[d] - XmD[d];
+									sum += dif * dif;
+								}
+								*(++curr_elem) = sum;
+								*curr_elem_sym = sum;
+							}
+						}
+
+					}
+					else if (jK > iK) {
+						// In this case, the block has to be computed all and the symmetric position is not inside the block.
+						const float* XnD = X + iK*D;
+						for (int n = iK; n < iK + K; n++, XnD += D) {
+							const float* XmD = X + jK*D;
+							float* curr_elem = &DD[n*N + jK];
+		                    float* curr_elem_sym = &DD[jK*N + n];
+
+							// Unfold the `m` and `d` loops
+							float sum_0 = 0, sum_1 = 0, sum_2 = 0, sum_3 = 0, sum_4 = 0, sum_5 = 0, sum_6 = 0, sum_7 = 0;
+
+							float Xn_1 = XnD[0], Xn_2 = XnD[1];
+							float Xm_01 = XmD[0], Xm_02 = XmD[1];
+							float Xm_11 = XmD[D], Xm_12 = XmD[1+D];
+							float Xm_21 = XmD[2*D], Xm_22 = XmD[1+2*D];
+							float Xm_31 = XmD[3*D], Xm_32 = XmD[1+3*D];
+							float Xm_41 = XmD[4*D], Xm_42 = XmD[1+4*D];
+							float Xm_51 = XmD[5*D], Xm_52 = XmD[1+5*D];
+							float Xm_61 = XmD[6*D], Xm_62 = XmD[1+6*D];
+							float Xm_71 = XmD[7*D], Xm_72 = XmD[1+7*D];
+
+							float diff_01 = Xm_01 - Xn_1, diff_02 = Xm_02 - Xn_2;
+							float diff_11 = Xm_11 - Xn_1, diff_12 = Xm_12 - Xn_2;
+							float diff_21 = Xm_21 - Xn_1, diff_22 = Xm_22 - Xn_2;
+							float diff_31 = Xm_31 - Xn_1, diff_32 = Xm_32 - Xn_2;
+							float diff_41 = Xm_41 - Xn_1, diff_42 = Xm_42 - Xn_2;
+							float diff_51 = Xm_51 - Xn_1, diff_52 = Xm_52 - Xn_2;
+							float diff_61 = Xm_61 - Xn_1, diff_62 = Xm_62 - Xn_2;
+							float diff_71 = Xm_71 - Xn_1, diff_72 = Xm_72 - Xn_2;
+							sum_0 += diff_01 * diff_01;
+							sum_1 += diff_11 * diff_11;
+							sum_2 += diff_21 * diff_21;
+							sum_3 += diff_31 * diff_31;
+							sum_4 += diff_41 * diff_41;
+							sum_5 += diff_51 * diff_51;
+							sum_6 += diff_61 * diff_61;
+							sum_7 += diff_71 * diff_71;
+
+							sum_0 += diff_02 * diff_02;
+							sum_1 += diff_12 * diff_12;
+							sum_2 += diff_22 * diff_22;
+							sum_3 += diff_32 * diff_32;
+							sum_4 += diff_42 * diff_42;
+							sum_5 += diff_52 * diff_52;
+							sum_6 += diff_62 * diff_62;
+							sum_7 += diff_72 * diff_72;
+
+							*(curr_elem++) = sum_0;
+							*(curr_elem++) = sum_1;
+							*(curr_elem++) = sum_2;
+							*(curr_elem++) = sum_3;
+							*(curr_elem++) = sum_4;
+							*(curr_elem++) = sum_5;
+							*(curr_elem++) = sum_6;
+							*(curr_elem++) = sum_7;
+
+							*(curr_elem_sym) = sum_0;
+							*(curr_elem_sym + 1 * N) = sum_1;
+							*(curr_elem_sym + 2 * N) = sum_2;
+							*(curr_elem_sym + 3 * N) = sum_3;
+							*(curr_elem_sym + 4 * N) = sum_4;
+							*(curr_elem_sym + 5 * N) = sum_5;
+							*(curr_elem_sym + 6 * N) = sum_6;
+							*(curr_elem_sym + 7 * N) = sum_7;
+						}
+					}
+				}
+			} // End of K loop
+
+		}
+	} // End of B loop
+}
+
+inline void blocking_64_block_8_unfold_sr(float* X, int N, int D, float* DD) {
+	// Block size
+	const int Bd = 64; // Desired Block size
+	const int B =  (N > Bd) ? Bd : N;
+	const int K = 8;
+
+
+	// Loops for block size 16
+	for (int iB = 0; iB < N; iB += B) {
+		for (int jB = iB; jB < N; jB += B) {
+
+			// Loops for microblocks of size 8
+			for (int iK = iB; iK < iB + B; iK += K) {
+				for (int jK = jB; jK < jB + B; jK += K) {
+					// In case the result DD and symetric are the same
+					if (iK == jK) {
+						const float* XnD = X + iK*D;
+						for (int n = iK; n < iK+K; n++, XnD += D) {
+							const float* XmD = XnD + D;
+							float* curr_elem = &DD[n*N + n];
+							*curr_elem = 0.0;
+							float* curr_elem_sym = curr_elem + N;
+
+							for (int m = n + 1; m < jK + K; m++, XmD += D, curr_elem_sym += N) {
+								float sum = 0.;
+								for (int d = 0; d < D; d++) {
+									float dif = XnD[d] - XmD[d];
+									sum += dif * dif;
+								}
+								*(++curr_elem) = sum;
+								*curr_elem_sym = sum;
+							}
+						}
+
+					}
+					else if (jK > iK) {
+						// In this case, the block has to be computed all and the symmetric position is not inside the block.
+						const float* XnD = X + iK*D;
+						for (int n = iK; n < iK + K; n++, XnD += D) {
+							const float* XmD = X + jK*D;
+							float* curr_elem = &DD[n*N + jK];
+		                    float* curr_elem_sym = &DD[jK*N + n];
+
+							// Unfold the `m` and `d` loops
+							float sum_0 = 0, sum_1 = 0, sum_2 = 0, sum_3 = 0, sum_4 = 0, sum_5 = 0, sum_6 = 0, sum_7 = 0;
+
+							float Xn_1 = XnD[0], Xn_2 = XnD[1];
+							float Xm_01 = XmD[0], Xm_02 = XmD[1];
+							float Xm_11 = XmD[D], Xm_12 = XmD[1+D];
+							float Xm_21 = XmD[2*D], Xm_22 = XmD[1+2*D];
+							float Xm_31 = XmD[3*D], Xm_32 = XmD[1+3*D];
+							float Xm_41 = XmD[4*D], Xm_42 = XmD[1+4*D];
+							float Xm_51 = XmD[5*D], Xm_52 = XmD[1+5*D];
+							float Xm_61 = XmD[6*D], Xm_62 = XmD[1+6*D];
+							float Xm_71 = XmD[7*D], Xm_72 = XmD[1+7*D];
+
+							float diff_01 = Xm_01 - Xn_1, diff_02 = Xm_02 - Xn_2;
+							float diff_11 = Xm_11 - Xn_1, diff_12 = Xm_12 - Xn_2;
+							float diff_21 = Xm_21 - Xn_1, diff_22 = Xm_22 - Xn_2;
+							float diff_31 = Xm_31 - Xn_1, diff_32 = Xm_32 - Xn_2;
+							float diff_41 = Xm_41 - Xn_1, diff_42 = Xm_42 - Xn_2;
+							float diff_51 = Xm_51 - Xn_1, diff_52 = Xm_52 - Xn_2;
+							float diff_61 = Xm_61 - Xn_1, diff_62 = Xm_62 - Xn_2;
+							float diff_71 = Xm_71 - Xn_1, diff_72 = Xm_72 - Xn_2;
+							sum_0 += diff_01 * diff_01;
+							sum_1 += diff_11 * diff_11;
+							sum_2 += diff_21 * diff_21;
+							sum_3 += diff_31 * diff_31;
+							sum_4 += diff_41 * diff_41;
+							sum_5 += diff_51 * diff_51;
+							sum_6 += diff_61 * diff_61;
+							sum_7 += diff_71 * diff_71;
+
+							sum_0 += diff_02 * diff_02;
+							sum_1 += diff_12 * diff_12;
+							sum_2 += diff_22 * diff_22;
+							sum_3 += diff_32 * diff_32;
+							sum_4 += diff_42 * diff_42;
+							sum_5 += diff_52 * diff_52;
+							sum_6 += diff_62 * diff_62;
+							sum_7 += diff_72 * diff_72;
+
+							*(curr_elem++) = sum_0;
+							*(curr_elem++) = sum_1;
+							*(curr_elem++) = sum_2;
+							*(curr_elem++) = sum_3;
+							*(curr_elem++) = sum_4;
+							*(curr_elem++) = sum_5;
+							*(curr_elem++) = sum_6;
+							*(curr_elem++) = sum_7;
+
+							*(curr_elem_sym) = sum_0;
+							*(curr_elem_sym + 1 * N) = sum_1;
+							*(curr_elem_sym + 2 * N) = sum_2;
+							*(curr_elem_sym + 3 * N) = sum_3;
+							*(curr_elem_sym + 4 * N) = sum_4;
+							*(curr_elem_sym + 5 * N) = sum_5;
+							*(curr_elem_sym + 6 * N) = sum_6;
+							*(curr_elem_sym + 7 * N) = sum_7;
+						}
+					}
+				}
+			} // End of K loop
+
+		}
+	} // End of B loop
+}
+
+
 inline void blocking_4(float* X, int N, int D, float* DD) {
 	// Block size
 	const int Bd = 4; // Desired Block size
 	const int B =  (N > Bd) ? Bd : N;
 
+
 	for (int i = 0; i < N; i += B) {
 		for (int j = i; j < N; j += B) {
+			// printf("%d\t%d\n", i, j);
 
 			if (i == j) {
 				// Case where the resulting block of BxB needs only to be
@@ -584,6 +710,7 @@ inline void blocking_4(float* X, int N, int D, float* DD) {
 					const float* XmD = XnD + D;
 					float* curr_elem = &DD[n*N + n];
 					*curr_elem = 0.0;
+
 					float* curr_elem_sym = curr_elem + N;
 					for (int m = n + 1; m < j + B; m++, XmD += D, curr_elem_sym += N) {
 						float sum = 0.;

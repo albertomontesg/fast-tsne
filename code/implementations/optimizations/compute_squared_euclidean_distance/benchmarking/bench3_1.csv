@@ -1,2 +1,0 @@
-ERROR!!!! the results for the "blocking_32_block_4" function are different to the correct implementation at position 28 with n=512
-Error: 0.965043 != 0.823629

@@ -2,20 +2,23 @@
 #include <float.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <vector>
+#include <algorithm>
 #include "../../utils/io.h"
 #include "../../utils/tsc_x86.h"
 #include "../../utils/random.h"
 #include "../../utils/data_type.h"
 #include "compute_squared_euclidean_distance.h"
 
-#define NUM_RUNS    10
+
+#define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e5
-#define N_START     4
-#define N_STOP      4096
+#define N_START     8
+#define N_STOP      8192
 #define N_INTERVAL  2
 #define EPS         1e-6
 
-int D = 2;
+const int D = 2;
 
 
 /* prototype of the function you need to optimize */
@@ -37,23 +40,23 @@ void register_functions() {
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
     add_function(&blocking_4, "blocking_4");
-    // add_function(&blocking_4_unfoold_sr, "blocking_4_unfoold_sr");
+    add_function(&blocking_4_unfoold_sr, "blocking_4_unfoold_sr");
     // add_function(&blocking_8, "blocking_8");
     // add_function(&blocking_16, "blocking_16");
     // add_function(&blocking_32, "blocking_32");
     // add_function(&blocking_64, "blocking_64");
-    // add_function(&blocking_32_block_4, "blocking_32_block_4");
-    add_function(&blocking_32_block_4_unfold1_sr, "blocking_32_block_4_unfold1_sr");
-    add_function(&blocking_32_block_4_unfold2_sr, "blocking_32_block_4_unfold2_sr");
-    add_function(&blocking_32_block_4_unfold2_sr_vec, "blocking_32_block_4_unfold2_sr_vec");
+    add_function(&blocking_32_block_4, "blocking_32_block_4");
+    add_function(&blocking_32_block_4_unfold_sr, "blocking_32_block_4_unfold_sr");
+    add_function(&blocking_16_block_8_unfold_sr, "blocking_16_block_8_unfold_sr");
+    add_function(&blocking_64_block_8_unfold_sr, "blocking_64_block_8_unfold_sr");
+    // add_function(&blocking_32_block_4_unfold_sr_vec, "blocking_32_block_4_unfold_sr_vec");
 }
 
 /*
 * Registers a user function to be tested by the driver program. Registers a
 * string description of the function as well
 */
-void add_function(comp_func f, char *name)
-{
+void add_function(comp_func f, char *name) {
   if (numFuncs >= 32)
   {
     printf("Couldn't register %s, too many functions registered (Max: %d)",
@@ -105,21 +108,23 @@ double perf_test(comp_func f, int n) {
 
     } while (multiplier > 2);
 
+    std::vector<double> num_cycles(num_runs);
 
-    start = start_tsc();
     for (size_t i = 0; i < num_runs; ++i) {
         // Put here the function
+        start = start_tsc();
         f(X, n, D, DD);
+        end = stop_tsc(start);
+        num_cycles[i] = (double) end;
     }
-    end = stop_tsc(start);
 
-    cycles = ( (double) end ) / num_runs;
-
+    std::sort(num_cycles.begin(), num_cycles.end());
+    int pos = num_runs / 2 + 1;
 
     destroy(X);
     destroy(DD);
 
-    return cycles;
+    return num_cycles[pos];
 }
 
 int main(int argc, char **argv) {
