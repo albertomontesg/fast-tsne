@@ -12,5 +12,8 @@ compile:
 benchmark: compile
 	./$(BIN) > $(OUT_FILE)
 
+asm:
+	$(CC) $(CFLAGS) -S -fverbose-asm  $(SRC) -o ./run.s
+
 clean:
 	if [ -f $(BIN) ] ; then rm $(BIN) ; fi;
