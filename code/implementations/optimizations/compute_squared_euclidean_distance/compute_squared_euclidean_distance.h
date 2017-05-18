@@ -1,7 +1,6 @@
 #ifndef COMPUTE_SQUARED_EUCLIDEAN_DISTANCE_H
 #define COMPUTE_SQUARED_EUCLIDEAN_DISTANCE_H
 
-#include "../../utils/data_type.h"
 #include <stdio.h>
 #include <immintrin.h>
 
