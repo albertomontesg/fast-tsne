@@ -18,7 +18,7 @@ FLAGS3="-O3 -std=c++11 -march=native -ffast-math"
 # Algorithms parameters
 MAX_ITER=1000       # Maximum number of iterations
 DIMS=2              # Output dim
-INPUT_DIMS=800      # Input dim for generated data
+INPUT_DIMS=512      # Input dim for generated data
 PERPLEXITY=50       # Perplexity best value
 
 # Choose compiler taking into account the computers running macOS
@@ -149,11 +149,11 @@ case $MODE in
 
                 FILE_PREFIX="./benchmarking/$TODAY"
                 
-                DIM1=$((INPUT_DIMS/10))
+                DIM1=$((INPUT_DIMS/4))
                 DATA_FILE_1=../../../data/${CLUSTER_SIZE}_${DIM1}_$STOP
                 DIM2=$((INPUT_DIMS))
                 DATA_FILE_2=$DATA_FILE # standard size
-                DIM3=$((INPUT_DIMS*10))
+                DIM3=$((INPUT_DIMS*4))
                 DATA_FILE_3=../../../data/${CLUSTER_SIZE}_${DIM3}_$STOP
                
                 echo "Building datasets for dimensions $DIM1 and $DIM3"
