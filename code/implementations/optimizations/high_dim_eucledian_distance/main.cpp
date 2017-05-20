@@ -15,13 +15,13 @@
 #define CYCLES_REQUIRED 1e5
 #define N_START     8
 // #define N_STOP      8192
-#define N_STOP      2048
+#define N_STOP      5000
 #define N_INTERVAL  2
 #define D_START     8
 // #define D_STOP      8192
-#define D_STOP      2048
+#define D_STOP      5000
 #define D_INTERVAL  2
-#define EPS         1e-2
+#define EPS         1e-4
 
 
 /* prototype of the function you need to optimize */
@@ -40,12 +40,24 @@ void add_function(comp_func f, char *name);
 void register_functions() {
     add_function(&base_version, "base_version");
     add_function(&fast_scalar, "fast_scalar");
-    add_function(&fast_scalar_4x4_base, "fast_scalar_4x4_base");
+
     add_function(&fast_scalar_8x8_base, "fast_scalar_8x8_base");
-    add_function(&fast_scalar_8x8_base_k, "fast_scalar_8x8_base_k");
+    add_function(&fast_scalar_avx, "fast_scalar_avx");
+    add_function(&fast_scalar_avx_start_matter, "fast_scalar_avx_start_matter");
+
+    add_function(&fast_scalar_8x8x8_big_unroll, "fast_scalar_8x8x8_big_unroll");
+    add_function(&fast_scalar_8x8x8_avx, "fast_scalar_8x8x8_avx");
+    add_function(&fast_scalar_8x8x8_avx_with_start, "fast_scalar_8x8x8_avx_with_start");
+
 
     //not faster than normal fast_scaler
     // add_function(&fast_scalar_unroll_first, "fast_scalar_unroll_first");
+
+    //
+    // add_function(&fast_scalar_4x4_base, "fast_scalar_4x4_base");
+    // add_function(&fast_scalar_8x8_8_base, "fast_scalar_8x8_8_base");
+    // add_function(&fast_scalar_8x8_base_k, "fast_scalar_8x8_base_k");
+
 }
 
 /*
@@ -142,8 +154,14 @@ int main(int argc, char **argv) {
 
 
     // Check the correct output of the functions
+
+    //nice uneven numbers, to see edgecase handling
+    // int N = 513;
+    // int D = 66;
     int N = 512;
     int D = 64;
+
+    
     float *Xc, *DDr, *DDc, *meansc, *meansr;
     // DDr = (float *) calloc(N* N, sizeof(float));
     DDc = (float *) calloc(N* N, sizeof(float));
@@ -198,7 +216,7 @@ int main(int argc, char **argv) {
     destroy(meansc);
 
     double cycles;
-    printf("N,D,");
+    printf("N,D");
     for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
     printf("\n");
     for (int n = n_start; n <= n_stop; n *= n_interval) {
