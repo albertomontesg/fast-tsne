@@ -10,7 +10,7 @@
 
 
 #define NUM_RUNS    11
-#define CYCLES_REQUIRED 1e5
+#define CYCLES_REQUIRED 1e6
 #define N_START     4
 #define N_STOP      8192
 #define N_INTERVAL  2
@@ -39,6 +39,9 @@ void register_functions() {
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
     add_function(&unfold_d,(char *) "unfold_d");
+    add_function(&unfold_d_unfold_mx4,(char *) "unfold_d_unfold_mx4");
+    add_function(&unfold_d_unfold_mx8,(char *) "unfold_d_unfold_mx8");
+    add_function(&unfold_d_unfold_mx4_vec,(char *) "unfold_d_unfold_mx4_vec");
 }
 
 /*
@@ -62,6 +65,14 @@ void add_function(comp_func f, char *name) {
 void build(float ** d, int row, int col) {
     *d = (float*) malloc(row * col * sizeof(float));
     rand_matrix(*d, row, col);
+}
+
+void build_zeros(float ** d, int row, int col) {
+    *d = (float*) calloc(row * col, sizeof(float));
+}
+
+void zero_diag(float *d, int N) {
+    for (int i = 0; i < N; i++) d[i*N + i] = 0.;
 }
 
 float sum(float* M, int n) {
@@ -89,8 +100,10 @@ double perf_test(comp_func f, int n) {
     build(&Y, n, D);
     build(&P, n, n);
     build(&Q, n, n);
+    zero_diag(P, n);
+    zero_diag(Q, n);
     float sum_Q = sum(Q, n*n);
-    build(&dC, n, D);
+    build_zeros(&dC, n, D);
 
     // Warm up the cache
     do {
@@ -152,8 +165,10 @@ int main(int argc, char **argv) {
     build(&Y, N, D);
     build(&P, N, N);
     build(&Q, N, N);
+    zero_diag(P, N);
+    zero_diag(Q, N);
     float sum_Q = sum(Q, N*N);
-    build(&dC_c, N, D);     // Correct result from base_version
+    build_zeros(&dC_c, N, D);     // Correct result from base_version
 
     comp_func base_f = userFuncs[0];
     base_f(Y, P, Q, sum_Q, N, D, dC_c);
@@ -162,10 +177,10 @@ int main(int argc, char **argv) {
 
     for (int i = 1; i < numFuncs; i++) {
         comp_func f = userFuncs[i];
-        build(&dC_r, N, D);     // Result from any other function
+        build_zeros(&dC_r, N, D);     // Result from any other function
         f(Y, P, Q, sum_Q, N, D, dC_r);
 
-        for (int j = 0; j < N*N; j++) {
+        for (int j = 0; j < N*D; j++) {
             error = fabs(dC_r[j] - dC_c[j]);
             if (error > (EPS * fabs(dC_c[j]))) {
                 printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position %d with n=%d\nError: %lf != %lf\n", funcNames[i], j, N, dC_r[j], dC_c[j]);

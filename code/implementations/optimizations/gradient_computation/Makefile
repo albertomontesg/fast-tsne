@@ -5,12 +5,13 @@ BIN=run.o
 OUT_FILE?=/dev/stdout;
 BENCH_MEDIAN?=-DMEDIAN
 
-all: compile benchmark
+all: benchmark
 
 compile:
 	$(CC) $(CFLAGS) $(SRC) -o ./$(BIN)
 
 benchmark:
+	$(CC) $(CFLAGS) -S -fverbose-asm  $(SRC) -o ./run.s
 	$(CC) $(CFLAGS) $(BENCH_MEDIAN) $(SRC) -o ./$(BIN)
 	./$(BIN) > $(OUT_FILE)
 
