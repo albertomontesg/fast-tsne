@@ -11,10 +11,11 @@
 
 #define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e5
-#define N_START     8
+#define N_START     4
 #define N_STOP      8192
 #define N_INTERVAL  2
 #define EPS         1e-3
+// #define MEDIAN
 
 const int D = 2;
 
@@ -33,11 +34,15 @@ void add_function(comp_func f, char *name);
 * Use add_function(func, description) to add your own functions
 */
 void register_functions() {
-    add_function(&base_version, "base_version");
+    add_function(&base_version,(char *) "base_version");
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    add_function(&blocking_32_block_4_unfold_sr_vec, "blocking_32_block_4_unfold_sr_vec");
+    add_function(&blocking_4_block_4_unfold_sr_vec, (char *) "blocking_4_block_4_unfold_sr_vec");
+    add_function(&blocking_8_block_4_unfold_sr_vec, (char *) "blocking_8_block_4_unfold_sr_vec");
+    add_function(&blocking_16_block_4_unfold_sr_vec, (char *) "blocking_16_block_4_unfold_sr_vec");
+    add_function(&blocking_32_block_4_unfold_sr_vec, (char *) "blocking_32_block_4_unfold_sr_vec");
+    add_function(&blocking_64_block_4_unfold_sr_vec, (char *) "blocking_64_block_4_unfold_sr_vec");
 }
 
 /*
@@ -96,23 +101,36 @@ double perf_test(comp_func f, int n) {
 
     } while (multiplier > 2);
 
+    #ifdef MEDIAN
     std::vector<double> num_cycles(num_runs);
+    #else
+    cycles = 0;
+    #endif
 
     for (size_t i = 0; i < num_runs; ++i) {
         // Put here the function
         start = start_tsc();
         f(X, n, D, DD);
         end = stop_tsc(start);
-        num_cycles[i] = (double) end;
-    }
 
-    std::sort(num_cycles.begin(), num_cycles.end());
-    int pos = num_runs / 2 + 1;
+        #ifdef MEDIAN
+        num_cycles[i] = (double) end;
+        #else
+        cycles += (double) end;
+        #endif
+    }
 
     destroy(X);
     destroy(DD);
 
+    #ifdef MEDIAN
+    std::sort(num_cycles.begin(), num_cycles.end());
+    int pos = num_runs / 2 + 1;
     return num_cycles[pos];
+    #else
+    cycles /= (double) num_runs;
+    return cycles;
+    #endif
 }
 
 int main(int argc, char **argv) {
@@ -127,16 +145,22 @@ int main(int argc, char **argv) {
     build(&X, N, D);
     build(&DDc, N, N);
     comp_func base_f = userFuncs[0];
-    base_f(X, N, D, DDc);
+    float sum_qc = base_f(X, N, D, DDc);
 
-    double error = 0.;
+    float error, error_sum;
+    float sum_qr;
     for (int i = 1; i < numFuncs; i++) {
         comp_func f = userFuncs[i];
         build(&DDr, N, N);
-        f(X, N, D, DDr);
+        sum_qr = f(X, N, D, DDr);
+        error_sum = fabs(sum_qr - sum_qc);
+        if (error_sum > (EPS * fabs(sum_qc))) {
+            printf("Error!! the sum of the Q matrix is different from the correct implementations: %f != %f\n", sum_qr, sum_qc);
+        }
+
         for (int j = 0; j < N*N; j++) {
             error = fabs(DDr[j] - DDc[j]);
-            if (error > EPS) {
+            if (error > (EPS * fabs(DDc[j]))) {
                 printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position %d with n=%d\nError: %lf != %lf\n", funcNames[i], j, N, DDr[j], DDc[j]);
                 exit(1);
             }

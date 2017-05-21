@@ -3,13 +3,15 @@ CFLAGS=-O3 -march=native -mavx -std=c++11
 SRC=main.cpp
 BIN=run.o
 OUT_FILE?=/dev/stdout;
+BENCH_MEDIAN?=-DMEDIAN
 
 all: compile benchmark
 
 compile:
 	$(CC) $(CFLAGS) $(SRC) -o ./$(BIN)
 
-benchmark: compile
+benchmark:
+	$(CC) $(CFLAGS) $(BENCH_MEDIAN) $(SRC) -o ./$(BIN)
 	./$(BIN) > $(OUT_FILE)
 
 asm:

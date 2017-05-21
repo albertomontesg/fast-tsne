@@ -5,7 +5,7 @@
 #include <immintrin.h>
 
 // Compute low dimensional affinities
-inline float blocking_32_block_4_unfold_sr_vec(float* X, int N, int D, float* DD) {
+inline float blocking_64_block_4_unfold_sr_vec(float* X, int N, int D, float* DD) {
 	// Block size
 	const int Bd = 32; // Desired Block size
 	const int B =  (N >= Bd) ? Bd : N;
@@ -13,6 +13,7 @@ inline float blocking_32_block_4_unfold_sr_vec(float* X, int N, int D, float* DD
 
 	__m128 ones = _mm_set1_ps(1.);
 	__m128 zeros = _mm_set1_ps(0.);
+	__m128 cum_sum = _mm_set1_ps(0.);
 
 	// Loops for block size 32
 	for (int iB = 0; iB < N; iB += B) {
@@ -85,6 +86,11 @@ inline float blocking_32_block_4_unfold_sr_vec(float* X, int N, int D, float* DD
 						__m128 q_2 = _mm_blend_ps(qinv_2, zeros, 4);
 						__m128 q_3 = _mm_blend_ps(qinv_3, zeros, 8);
 
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
 						_mm_store_ps(DDij, q_0);
 						_mm_store_ps(DDij+N, q_1);
 						_mm_store_ps(DDij+2*N, q_2);
@@ -144,14 +150,19 @@ inline float blocking_32_block_4_unfold_sr_vec(float* X, int N, int D, float* DD
 						__m128 n_2 = _mm_add_ps(norm_2, ones);
 						__m128 n_3 = _mm_add_ps(norm_3, ones);
 
-						__m128 q_0 = _mm_div_ps(ones, n_0);
-						__m128 q_1 = _mm_div_ps(ones, n_1);
-						__m128 q_2 = _mm_div_ps(ones, n_2);
-						__m128 q_3 = _mm_div_ps(ones, n_3);
-						// __m128 q_0 = _mm_rcp_ps(n_0);
-						// __m128 q_1 = _mm_rcp_ps(n_1);
-						// __m128 q_2 = _mm_rcp_ps(n_2);
-						// __m128 q_3 = _mm_rcp_ps(n_3);
+						// __m128 q_0 = _mm_div_ps(ones, n_0);
+						// __m128 q_1 = _mm_div_ps(ones, n_1);
+						// __m128 q_2 = _mm_div_ps(ones, n_2);
+						// __m128 q_3 = _mm_div_ps(ones, n_3);
+						__m128 q_0 = _mm_rcp_ps(n_0);
+						__m128 q_1 = _mm_rcp_ps(n_1);
+						__m128 q_2 = _mm_rcp_ps(n_2);
+						__m128 q_3 = _mm_rcp_ps(n_3);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
 
 						_mm_store_ps(DDij, q_0);
 						_mm_store_ps(DDij+N, q_1);
@@ -159,6 +170,8 @@ inline float blocking_32_block_4_unfold_sr_vec(float* X, int N, int D, float* DD
 						_mm_store_ps(DDij+3*N, q_3);
 
 						_MM_TRANSPOSE4_PS(q_0, q_1, q_2, q_3);
+
+						cum_sum = _mm_add_ps(cum_sum, sum3);
 
 						_mm_store_ps(DDji, q_0);
 						_mm_store_ps(DDji+N, q_1);
@@ -172,9 +185,780 @@ inline float blocking_32_block_4_unfold_sr_vec(float* X, int N, int D, float* DD
 		}
 	} // End of B loop
 
-	return 0.;
+	__m128 cum_sum_sh1 = _mm_shuffle_ps(cum_sum, cum_sum, 177);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh1);
+	__m128 cum_sum_sh2 = _mm_shuffle_ps(cum_sum, cum_sum, 78);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh2);
+
+	float sum_q;
+	_mm_store_ss(&sum_q, cum_sum);
+
+	return sum_q;
 }
 
+inline float blocking_32_block_4_unfold_sr_vec(float* X, int N, int D, float* DD) {
+	// Block size
+	const int Bd = 32; // Desired Block size
+	const int B =  (N >= Bd) ? Bd : N;
+	const int K =  (N > 4) ? 4: N;
+
+	__m128 ones = _mm_set1_ps(1.);
+	__m128 zeros = _mm_set1_ps(0.);
+	__m128 cum_sum = _mm_set1_ps(0.);
+
+	// Loops for block size 32
+	for (int iB = 0; iB < N; iB += B) {
+		for (int jB = iB; jB < N; jB += B) {
+
+			// Loops for microblocks of size 4
+			for (int iK = iB; iK < iB + B; iK += K) {
+				for (int jK = jB; jK < jB + B; jK += K) {
+					// In case the result DD and symetric are the same
+					if (iK == jK) {
+						// Case where the resulting block of BxB needs only to
+						// be computed the upper triangle part
+                        const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
+						float* DDij = DD + iK * N + jK;
+
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
+
+						__m256 Xm = _mm256_loadu_ps(XmD);
+
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
+
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
+
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
+
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
+
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
+
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						__m128 n_0 = _mm_add_ps(norm_0, ones);
+						__m128 n_1 = _mm_add_ps(norm_1, ones);
+						__m128 n_2 = _mm_add_ps(norm_2, ones);
+						__m128 n_3 = _mm_add_ps(norm_3, ones);
+
+						__m128 qinv_0 = _mm_rcp_ps(n_0);
+						__m128 qinv_1 = _mm_rcp_ps(n_1);
+						__m128 qinv_2 = _mm_rcp_ps(n_2);
+						__m128 qinv_3 = _mm_rcp_ps(n_3);
+
+						__m128 q_0 = _mm_blend_ps(qinv_0, zeros, 1);
+						__m128 q_1 = _mm_blend_ps(qinv_1, zeros, 2);
+						__m128 q_2 = _mm_blend_ps(qinv_2, zeros, 4);
+						__m128 q_3 = _mm_blend_ps(qinv_3, zeros, 8);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDij, q_0);
+						_mm_store_ps(DDij+N, q_1);
+						_mm_store_ps(DDij+2*N, q_2);
+						_mm_store_ps(DDij+3*N, q_3);
+
+					}
+					else if (jK > iK) {
+						// In this case, the block has to be computed all and the symmetric position is not inside the block.
+						const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
+						float* DDij = DD + iK * N + jK;
+						float* DDji = DD + jK * N + iK;
+
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
+
+						__m256 Xm = _mm256_loadu_ps(XmD);
+
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
+
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
+
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
+
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
+
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
+
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						__m128 n_0 = _mm_add_ps(norm_0, ones);
+						__m128 n_1 = _mm_add_ps(norm_1, ones);
+						__m128 n_2 = _mm_add_ps(norm_2, ones);
+						__m128 n_3 = _mm_add_ps(norm_3, ones);
+
+						// __m128 q_0 = _mm_div_ps(ones, n_0);
+						// __m128 q_1 = _mm_div_ps(ones, n_1);
+						// __m128 q_2 = _mm_div_ps(ones, n_2);
+						// __m128 q_3 = _mm_div_ps(ones, n_3);
+						__m128 q_0 = _mm_rcp_ps(n_0);
+						__m128 q_1 = _mm_rcp_ps(n_1);
+						__m128 q_2 = _mm_rcp_ps(n_2);
+						__m128 q_3 = _mm_rcp_ps(n_3);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDij, q_0);
+						_mm_store_ps(DDij+N, q_1);
+						_mm_store_ps(DDij+2*N, q_2);
+						_mm_store_ps(DDij+3*N, q_3);
+
+						_MM_TRANSPOSE4_PS(q_0, q_1, q_2, q_3);
+
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDji, q_0);
+						_mm_store_ps(DDji+N, q_1);
+						_mm_store_ps(DDji+2*N, q_2);
+						_mm_store_ps(DDji+3*N, q_3);
+
+					}
+				}
+			} // End of K loop
+
+		}
+	} // End of B loop
+
+	__m128 cum_sum_sh1 = _mm_shuffle_ps(cum_sum, cum_sum, 177);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh1);
+	__m128 cum_sum_sh2 = _mm_shuffle_ps(cum_sum, cum_sum, 78);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh2);
+
+	float sum_q;
+	_mm_store_ss(&sum_q, cum_sum);
+
+	return sum_q;
+}
+
+inline float blocking_16_block_4_unfold_sr_vec(float* X, int N, int D, float* DD) {
+	// Block size
+	const int Bd = 16; // Desired Block size
+	const int B =  (N >= Bd) ? Bd : N;
+	const int K =  (N > 4) ? 4: N;
+
+	__m128 ones = _mm_set1_ps(1.);
+	__m128 zeros = _mm_set1_ps(0.);
+	__m128 cum_sum = _mm_set1_ps(0.);
+
+	// Loops for block size 32
+	for (int iB = 0; iB < N; iB += B) {
+		for (int jB = iB; jB < N; jB += B) {
+
+			// Loops for microblocks of size 4
+			for (int iK = iB; iK < iB + B; iK += K) {
+				for (int jK = jB; jK < jB + B; jK += K) {
+					// In case the result DD and symetric are the same
+					if (iK == jK) {
+						// Case where the resulting block of BxB needs only to
+						// be computed the upper triangle part
+                        const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
+						float* DDij = DD + iK * N + jK;
+
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
+
+						__m256 Xm = _mm256_loadu_ps(XmD);
+
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
+
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
+
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
+
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
+
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
+
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						__m128 n_0 = _mm_add_ps(norm_0, ones);
+						__m128 n_1 = _mm_add_ps(norm_1, ones);
+						__m128 n_2 = _mm_add_ps(norm_2, ones);
+						__m128 n_3 = _mm_add_ps(norm_3, ones);
+
+						__m128 qinv_0 = _mm_rcp_ps(n_0);
+						__m128 qinv_1 = _mm_rcp_ps(n_1);
+						__m128 qinv_2 = _mm_rcp_ps(n_2);
+						__m128 qinv_3 = _mm_rcp_ps(n_3);
+
+						__m128 q_0 = _mm_blend_ps(qinv_0, zeros, 1);
+						__m128 q_1 = _mm_blend_ps(qinv_1, zeros, 2);
+						__m128 q_2 = _mm_blend_ps(qinv_2, zeros, 4);
+						__m128 q_3 = _mm_blend_ps(qinv_3, zeros, 8);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDij, q_0);
+						_mm_store_ps(DDij+N, q_1);
+						_mm_store_ps(DDij+2*N, q_2);
+						_mm_store_ps(DDij+3*N, q_3);
+
+					}
+					else if (jK > iK) {
+						// In this case, the block has to be computed all and the symmetric position is not inside the block.
+						const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
+						float* DDij = DD + iK * N + jK;
+						float* DDji = DD + jK * N + iK;
+
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
+
+						__m256 Xm = _mm256_loadu_ps(XmD);
+
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
+
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
+
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
+
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
+
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
+
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						__m128 n_0 = _mm_add_ps(norm_0, ones);
+						__m128 n_1 = _mm_add_ps(norm_1, ones);
+						__m128 n_2 = _mm_add_ps(norm_2, ones);
+						__m128 n_3 = _mm_add_ps(norm_3, ones);
+
+						// __m128 q_0 = _mm_div_ps(ones, n_0);
+						// __m128 q_1 = _mm_div_ps(ones, n_1);
+						// __m128 q_2 = _mm_div_ps(ones, n_2);
+						// __m128 q_3 = _mm_div_ps(ones, n_3);
+						__m128 q_0 = _mm_rcp_ps(n_0);
+						__m128 q_1 = _mm_rcp_ps(n_1);
+						__m128 q_2 = _mm_rcp_ps(n_2);
+						__m128 q_3 = _mm_rcp_ps(n_3);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDij, q_0);
+						_mm_store_ps(DDij+N, q_1);
+						_mm_store_ps(DDij+2*N, q_2);
+						_mm_store_ps(DDij+3*N, q_3);
+
+						_MM_TRANSPOSE4_PS(q_0, q_1, q_2, q_3);
+
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDji, q_0);
+						_mm_store_ps(DDji+N, q_1);
+						_mm_store_ps(DDji+2*N, q_2);
+						_mm_store_ps(DDji+3*N, q_3);
+
+					}
+				}
+			} // End of K loop
+
+		}
+	} // End of B loop
+
+	__m128 cum_sum_sh1 = _mm_shuffle_ps(cum_sum, cum_sum, 177);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh1);
+	__m128 cum_sum_sh2 = _mm_shuffle_ps(cum_sum, cum_sum, 78);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh2);
+
+	float sum_q;
+	_mm_store_ss(&sum_q, cum_sum);
+
+	return sum_q;
+}
+
+inline float blocking_8_block_4_unfold_sr_vec(float* X, int N, int D, float* DD) {
+	// Block size
+	const int Bd = 8; // Desired Block size
+	const int B =  (N >= Bd) ? Bd : N;
+	const int K =  (N > 4) ? 4: N;
+
+	__m128 ones = _mm_set1_ps(1.);
+	__m128 zeros = _mm_set1_ps(0.);
+	__m128 cum_sum = _mm_set1_ps(0.);
+
+	// Loops for block size 32
+	for (int iB = 0; iB < N; iB += B) {
+		for (int jB = iB; jB < N; jB += B) {
+
+			// Loops for microblocks of size 4
+			for (int iK = iB; iK < iB + B; iK += K) {
+				for (int jK = jB; jK < jB + B; jK += K) {
+					// In case the result DD and symetric are the same
+					if (iK == jK) {
+						// Case where the resulting block of BxB needs only to
+						// be computed the upper triangle part
+                        const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
+						float* DDij = DD + iK * N + jK;
+
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
+
+						__m256 Xm = _mm256_loadu_ps(XmD);
+
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
+
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
+
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
+
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
+
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
+
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						__m128 n_0 = _mm_add_ps(norm_0, ones);
+						__m128 n_1 = _mm_add_ps(norm_1, ones);
+						__m128 n_2 = _mm_add_ps(norm_2, ones);
+						__m128 n_3 = _mm_add_ps(norm_3, ones);
+
+						__m128 qinv_0 = _mm_rcp_ps(n_0);
+						__m128 qinv_1 = _mm_rcp_ps(n_1);
+						__m128 qinv_2 = _mm_rcp_ps(n_2);
+						__m128 qinv_3 = _mm_rcp_ps(n_3);
+
+						__m128 q_0 = _mm_blend_ps(qinv_0, zeros, 1);
+						__m128 q_1 = _mm_blend_ps(qinv_1, zeros, 2);
+						__m128 q_2 = _mm_blend_ps(qinv_2, zeros, 4);
+						__m128 q_3 = _mm_blend_ps(qinv_3, zeros, 8);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDij, q_0);
+						_mm_store_ps(DDij+N, q_1);
+						_mm_store_ps(DDij+2*N, q_2);
+						_mm_store_ps(DDij+3*N, q_3);
+
+					}
+					else if (jK > iK) {
+						// In this case, the block has to be computed all and the symmetric position is not inside the block.
+						const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
+						float* DDij = DD + iK * N + jK;
+						float* DDji = DD + jK * N + iK;
+
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
+
+						__m256 Xm = _mm256_loadu_ps(XmD);
+
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
+
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
+
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
+
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
+
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
+
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						__m128 n_0 = _mm_add_ps(norm_0, ones);
+						__m128 n_1 = _mm_add_ps(norm_1, ones);
+						__m128 n_2 = _mm_add_ps(norm_2, ones);
+						__m128 n_3 = _mm_add_ps(norm_3, ones);
+
+						// __m128 q_0 = _mm_div_ps(ones, n_0);
+						// __m128 q_1 = _mm_div_ps(ones, n_1);
+						// __m128 q_2 = _mm_div_ps(ones, n_2);
+						// __m128 q_3 = _mm_div_ps(ones, n_3);
+						__m128 q_0 = _mm_rcp_ps(n_0);
+						__m128 q_1 = _mm_rcp_ps(n_1);
+						__m128 q_2 = _mm_rcp_ps(n_2);
+						__m128 q_3 = _mm_rcp_ps(n_3);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDij, q_0);
+						_mm_store_ps(DDij+N, q_1);
+						_mm_store_ps(DDij+2*N, q_2);
+						_mm_store_ps(DDij+3*N, q_3);
+
+						_MM_TRANSPOSE4_PS(q_0, q_1, q_2, q_3);
+
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDji, q_0);
+						_mm_store_ps(DDji+N, q_1);
+						_mm_store_ps(DDji+2*N, q_2);
+						_mm_store_ps(DDji+3*N, q_3);
+
+					}
+				}
+			} // End of K loop
+
+		}
+	} // End of B loop
+
+	__m128 cum_sum_sh1 = _mm_shuffle_ps(cum_sum, cum_sum, 177);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh1);
+	__m128 cum_sum_sh2 = _mm_shuffle_ps(cum_sum, cum_sum, 78);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh2);
+
+	float sum_q;
+	_mm_store_ss(&sum_q, cum_sum);
+
+	return sum_q;
+}
+
+inline float blocking_4_block_4_unfold_sr_vec(float* X, int N, int D, float* DD) {
+	// Block size
+	const int Bd = 4; // Desired Block size
+	const int B =  (N >= Bd) ? Bd : N;
+	const int K =  (N > 4) ? 4: N;
+
+	__m128 ones = _mm_set1_ps(1.);
+	__m128 zeros = _mm_set1_ps(0.);
+	__m128 cum_sum = _mm_set1_ps(0.);
+
+	// Loops for block size 32
+	for (int iB = 0; iB < N; iB += B) {
+		for (int jB = iB; jB < N; jB += B) {
+
+			// Loops for microblocks of size 4
+			for (int iK = iB; iK < iB + B; iK += K) {
+				for (int jK = jB; jK < jB + B; jK += K) {
+					// In case the result DD and symetric are the same
+					if (iK == jK) {
+						// Case where the resulting block of BxB needs only to
+						// be computed the upper triangle part
+                        const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
+						float* DDij = DD + iK * N + jK;
+
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
+
+						__m256 Xm = _mm256_loadu_ps(XmD);
+
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
+
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
+
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
+
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
+
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
+
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						__m128 n_0 = _mm_add_ps(norm_0, ones);
+						__m128 n_1 = _mm_add_ps(norm_1, ones);
+						__m128 n_2 = _mm_add_ps(norm_2, ones);
+						__m128 n_3 = _mm_add_ps(norm_3, ones);
+
+						__m128 qinv_0 = _mm_rcp_ps(n_0);
+						__m128 qinv_1 = _mm_rcp_ps(n_1);
+						__m128 qinv_2 = _mm_rcp_ps(n_2);
+						__m128 qinv_3 = _mm_rcp_ps(n_3);
+
+						__m128 q_0 = _mm_blend_ps(qinv_0, zeros, 1);
+						__m128 q_1 = _mm_blend_ps(qinv_1, zeros, 2);
+						__m128 q_2 = _mm_blend_ps(qinv_2, zeros, 4);
+						__m128 q_3 = _mm_blend_ps(qinv_3, zeros, 8);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDij, q_0);
+						_mm_store_ps(DDij+N, q_1);
+						_mm_store_ps(DDij+2*N, q_2);
+						_mm_store_ps(DDij+3*N, q_3);
+
+					}
+					else if (jK > iK) {
+						// In this case, the block has to be computed all and the symmetric position is not inside the block.
+						const float* XnD = X + iK * D;
+						const float* XmD = X + jK * D;
+						float* DDij = DD + iK * N + jK;
+						float* DDji = DD + jK * N + iK;
+
+						__m256 Xn_0 = _mm256_set_ps(XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0], XnD[1], XnD[0]);
+						__m256 Xn_1 = _mm256_set_ps(XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2], XnD[3], XnD[2]);
+						__m256 Xn_2 = _mm256_set_ps(XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4], XnD[5], XnD[4]);
+						__m256 Xn_3 = _mm256_set_ps(XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6], XnD[7], XnD[6]);
+
+						__m256 Xm = _mm256_loadu_ps(XmD);
+
+						__m256 diff_0 = _mm256_sub_ps(Xm, Xn_0);
+						__m256 diff_1 = _mm256_sub_ps(Xm, Xn_1);
+						__m256 diff_2 = _mm256_sub_ps(Xm, Xn_2);
+						__m256 diff_3 = _mm256_sub_ps(Xm, Xn_3);
+
+						__m256 diff_sq_0 = _mm256_mul_ps(diff_0, diff_0);
+						__m256 diff_sq_1 = _mm256_mul_ps(diff_1, diff_1);
+						__m256 diff_sq_2 = _mm256_mul_ps(diff_2, diff_2);
+						__m256 diff_sq_3 = _mm256_mul_ps(diff_3, diff_3);
+
+						__m256 diff_sq_shuf_0 = _mm256_shuffle_ps(diff_sq_0, diff_sq_0, 177);
+						__m256 diff_sq_shuf_1 = _mm256_shuffle_ps(diff_sq_1, diff_sq_1, 177);
+						__m256 diff_sq_shuf_2 = _mm256_shuffle_ps(diff_sq_2, diff_sq_2, 177);
+						__m256 diff_sq_shuf_3 = _mm256_shuffle_ps(diff_sq_3, diff_sq_3, 177);
+
+						__m256 norm_0x = _mm256_add_ps(diff_sq_0, diff_sq_shuf_0);
+						__m256 norm_1x = _mm256_add_ps(diff_sq_1, diff_sq_shuf_1);
+						__m256 norm_2x = _mm256_add_ps(diff_sq_2, diff_sq_shuf_2);
+						__m256 norm_3x = _mm256_add_ps(diff_sq_3, diff_sq_shuf_3);
+
+						__m128 norm_0_low = _mm256_castps256_ps128(norm_0x);
+						__m128 norm_1_low = _mm256_castps256_ps128(norm_1x);
+						__m128 norm_2_low = _mm256_castps256_ps128(norm_2x);
+						__m128 norm_3_low = _mm256_castps256_ps128(norm_3x);
+						__m128 norm_0_high = _mm256_extractf128_ps(norm_0x, 1);
+						__m128 norm_1_high = _mm256_extractf128_ps(norm_1x, 1);
+						__m128 norm_2_high = _mm256_extractf128_ps(norm_2x, 1);
+						__m128 norm_3_high = _mm256_extractf128_ps(norm_3x, 1);
+
+						__m128 norm_0 = _mm_shuffle_ps(norm_0_low, norm_0_high, 136);
+						__m128 norm_1 = _mm_shuffle_ps(norm_1_low, norm_1_high, 136);
+						__m128 norm_2 = _mm_shuffle_ps(norm_2_low, norm_2_high, 136);
+						__m128 norm_3 = _mm_shuffle_ps(norm_3_low, norm_3_high, 136);
+
+						__m128 n_0 = _mm_add_ps(norm_0, ones);
+						__m128 n_1 = _mm_add_ps(norm_1, ones);
+						__m128 n_2 = _mm_add_ps(norm_2, ones);
+						__m128 n_3 = _mm_add_ps(norm_3, ones);
+
+						// __m128 q_0 = _mm_div_ps(ones, n_0);
+						// __m128 q_1 = _mm_div_ps(ones, n_1);
+						// __m128 q_2 = _mm_div_ps(ones, n_2);
+						// __m128 q_3 = _mm_div_ps(ones, n_3);
+						__m128 q_0 = _mm_rcp_ps(n_0);
+						__m128 q_1 = _mm_rcp_ps(n_1);
+						__m128 q_2 = _mm_rcp_ps(n_2);
+						__m128 q_3 = _mm_rcp_ps(n_3);
+
+						__m128 sum1 = _mm_add_ps(q_0, q_1);
+						__m128 sum2 = _mm_add_ps(q_2, q_3);
+						__m128 sum3 = _mm_add_ps(sum1, sum2);
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDij, q_0);
+						_mm_store_ps(DDij+N, q_1);
+						_mm_store_ps(DDij+2*N, q_2);
+						_mm_store_ps(DDij+3*N, q_3);
+
+						_MM_TRANSPOSE4_PS(q_0, q_1, q_2, q_3);
+
+						cum_sum = _mm_add_ps(cum_sum, sum3);
+
+						_mm_store_ps(DDji, q_0);
+						_mm_store_ps(DDji+N, q_1);
+						_mm_store_ps(DDji+2*N, q_2);
+						_mm_store_ps(DDji+3*N, q_3);
+
+					}
+				}
+			} // End of K loop
+
+		}
+	} // End of B loop
+
+	__m128 cum_sum_sh1 = _mm_shuffle_ps(cum_sum, cum_sum, 177);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh1);
+	__m128 cum_sum_sh2 = _mm_shuffle_ps(cum_sum, cum_sum, 78);
+	cum_sum = _mm_add_ps(cum_sum, cum_sum_sh2);
+
+	float sum_q;
+	_mm_store_ss(&sum_q, cum_sum);
+
+	return sum_q;
+}
 
 // Compute squared euclidean disctance for all pairs of vectors X_i X_j
 inline void compute_squared_euclidean_distance(float* X, int N, int D, float* DD) {
