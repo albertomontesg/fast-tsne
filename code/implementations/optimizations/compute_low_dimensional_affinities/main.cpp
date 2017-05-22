@@ -11,7 +11,7 @@
 
 #define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e5
-#define N_START     4
+#define N_START     8
 #define N_STOP      8192
 #define N_INTERVAL  2
 #define EPS         1e-3
@@ -38,11 +38,12 @@ void register_functions() {
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    add_function(&blocking_4_block_4_unfold_sr_vec, (char *) "blocking_4_block_4_unfold_sr_vec");
-    add_function(&blocking_8_block_4_unfold_sr_vec, (char *) "blocking_8_block_4_unfold_sr_vec");
-    add_function(&blocking_16_block_4_unfold_sr_vec, (char *) "blocking_16_block_4_unfold_sr_vec");
+    // add_function(&blocking_4_block_4_unfold_sr_vec, (char *) "blocking_4_block_4_unfold_sr_vec");
+    // add_function(&blocking_8_block_4_unfold_sr_vec, (char *) "blocking_8_block_4_unfold_sr_vec");
+    // add_function(&blocking_16_block_4_unfold_sr_vec, (char *) "blocking_16_block_4_unfold_sr_vec");
     add_function(&blocking_32_block_4_unfold_sr_vec, (char *) "blocking_32_block_4_unfold_sr_vec");
-    add_function(&blocking_64_block_4_unfold_sr_vec, (char *) "blocking_64_block_4_unfold_sr_vec");
+    add_function(&blocking_32_block_8_unfold_sr_vec, (char *) "blocking_32_block_8_unfold_sr_vec");
+    // add_function(&blocking_64_block_4_unfold_sr_vec, (char *) "blocking_64_block_4_unfold_sr_vec");
 }
 
 /*
