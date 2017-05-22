@@ -4,11 +4,10 @@
 #include <stdio.h>
 #include <immintrin.h>
 
-
-inline void unfold_d_unfold_mx4_vec(float* Y, float* P, float* Q, float sum_Q,
+inline void unfold_d_unfold_mx8_vec(float* Y, float* P, float* Q, float sum_Q,
 									int N, int D, float* dC) {
-	int M = 4;
-	int B = 4;
+	const int M = 8;
+	const int B = 4;
 
 	// Perform the computation of the gradient
 	int nN = 0;
@@ -24,56 +23,244 @@ inline void unfold_d_unfold_mx4_vec(float* Y, float* P, float* Q, float sum_Q,
 		__m256 Yn   = _mm256_loadu_ps(Y + nD);
 
 		for (int m = 0; m < N; m += M) {
-			__m256 p_0 = _mm256_set_ps(P[nN+m],       P[nN+m],
-									   P[nN+m+N],     P[nN+m+N],
-									   P[nN+m+2*N],   P[nN+m+2*N],
-									   P[nN+m+3*N],   P[nN+m+3*N]);
-			__m256 p_1 = _mm256_set_ps(P[nN+m+1],     P[nN+m+1],
-									   P[nN+m+1+N],   P[nN+m+1+N],
-									   P[nN+m+1+2*N], P[nN+m+1+2*N],
-									   P[nN+m+1+3*N], P[nN+m+1+3*N]);
-			__m256 p_2 = _mm256_set_ps(P[nN+m+2],     P[nN+m+2],
-									   P[nN+m+2+N],   P[nN+m+2+N],
-									   P[nN+m+2+2*N], P[nN+m+2+2*N],
-									   P[nN+m+2+3*N], P[nN+m+2+3*N]);
-			__m256 p_3 = _mm256_set_ps(P[nN+m+3],     P[nN+m+3],
-								   P[nN+m+3+N],   P[nN+m+3+N],
-									   P[nN+m+3+2*N], P[nN+m+3+2*N],
-									   P[nN+m+3+3*N], P[nN+m+3+3*N]);
 
-			__m256 q_0 = _mm256_set_ps(Q[nN+m],       Q[nN+m],
-									   Q[nN+m+N],     Q[nN+m+N],
-									   Q[nN+m+2*N],   Q[nN+m+2*N],
-									   Q[nN+m+3*N],   Q[nN+m+3*N]);
-			__m256 q_1 = _mm256_set_ps(Q[nN+m+1],     Q[nN+m+1],
-									   Q[nN+m+1+N],   Q[nN+m+1+N],
-									   Q[nN+m+1+2*N], Q[nN+m+1+2*N],
-									   Q[nN+m+1+3*N], Q[nN+m+1+3*N]);
-			__m256 q_2 = _mm256_set_ps(Q[nN+m+2],     Q[nN+m+2],
-									   Q[nN+m+2+N],   Q[nN+m+2+N],
-									   Q[nN+m+2+2*N], Q[nN+m+2+2*N],
-									   Q[nN+m+2+3*N], Q[nN+m+2+3*N]);
-			__m256 q_3 = _mm256_set_ps(Q[nN+m+3],     Q[nN+m+3],
-									   Q[nN+m+3+N],   Q[nN+m+3+N],
-									   Q[nN+m+3+2*N], Q[nN+m+3+2*N],
-									   Q[nN+m+3+3*N], Q[nN+m+3+3*N]);
+			__m256 Ym_0 = _mm256_set_ps(Y[mD+1],     Y[mD],
+										Y[mD+1],     Y[mD],
+										Y[mD+1],     Y[mD],
+										Y[mD+1],     Y[mD]);
+			__m256 Ym_1 = _mm256_set_ps(Y[mD+D+1],   Y[mD+D],
+										Y[mD+D+1],   Y[mD+D],
+										Y[mD+D+1],   Y[mD+D],
+										Y[mD+D+1],   Y[mD+D]);
+			__m256 Ym_2 = _mm256_set_ps(Y[mD+2*D+1], Y[mD+2*D],
+										Y[mD+2*D+1], Y[mD+2*D],
+										Y[mD+2*D+1], Y[mD+2*D],
+										Y[mD+2*D+1], Y[mD+2*D]);
+			__m256 Ym_3 = _mm256_set_ps(Y[mD+3*D+1], Y[mD+3*D],
+										Y[mD+3*D+1], Y[mD+3*D],
+										Y[mD+3*D+1], Y[mD+3*D],
+										Y[mD+3*D+1], Y[mD+3*D]);
+			__m256 Ym_4 = _mm256_set_ps(Y[mD+4*D+1], Y[mD+4*D],
+										Y[mD+4*D+1], Y[mD+4*D],
+										Y[mD+4*D+1], Y[mD+4*D],
+										Y[mD+4*D+1], Y[mD+4*D]);
+			__m256 Ym_5 = _mm256_set_ps(Y[mD+5*D+1], Y[mD+5*D],
+										Y[mD+5*D+1], Y[mD+5*D],
+										Y[mD+5*D+1], Y[mD+5*D],
+										Y[mD+5*D+1], Y[mD+5*D]);
+			__m256 Ym_6 = _mm256_set_ps(Y[mD+6*D+1], Y[mD+6*D],
+										Y[mD+6*D+1], Y[mD+6*D],
+										Y[mD+6*D+1], Y[mD+6*D],
+										Y[mD+6*D+1], Y[mD+6*D]);
+			__m256 Ym_7 = _mm256_set_ps(Y[mD+7*D+1], Y[mD+7*D],
+										Y[mD+7*D+1], Y[mD+7*D],
+										Y[mD+7*D+1], Y[mD+7*D],
+										Y[mD+7*D+1], Y[mD+7*D]);
 
-			__m256 Ym_0 = _mm256_set_ps(Y[mD],     Y[mD+1],
-										Y[mD],     Y[mD+1],
-										Y[mD],     Y[mD+1],
-										Y[mD],     Y[mD+1]);
-			__m256 Ym_1 = _mm256_set_ps(Y[mD+D],   Y[mD+D+1],
-										Y[mD+D],   Y[mD+D+1],
-										Y[mD+D],   Y[mD+D+1],
-										Y[mD+D],   Y[mD+D+1]);
-			__m256 Ym_2 = _mm256_set_ps(Y[mD+2*D], Y[mD+2*D+1],
-										Y[mD+2*D], Y[mD+2*D+1],
-										Y[mD+2*D], Y[mD+2*D+1],
-										Y[mD+2*D], Y[mD+2*D+1]);
-			__m256 Ym_3 = _mm256_set_ps(Y[mD+3*D], Y[mD+3*D+1],
-										Y[mD+3*D], Y[mD+3*D+1],
-										Y[mD+3*D], Y[mD+3*D+1],
-										Y[mD+3*D], Y[mD+3*D+1]);
+			__m256 p_0 = _mm256_set_ps(P[nN+3*N+m],   P[nN+3*N+m],
+									   P[nN+2*N+m],   P[nN+2*N+m],
+									   P[nN+N+m],     P[nN+N+m],
+									   P[nN+m],       P[nN+m]);
+			__m256 p_1 = _mm256_set_ps(P[nN+3*N+m+1], P[nN+3*N+m+1],
+									   P[nN+2*N+m+1], P[nN+2*N+m+1],
+									   P[nN+N+m+1],   P[nN+N+m+1],
+									   P[nN+m+1],     P[nN+m+1]);
+			__m256 p_2 = _mm256_set_ps(P[nN+3*N+m+2], P[nN+3*N+m+2],
+									   P[nN+2*N+m+2], P[nN+2*N+m+2],
+									   P[nN+N+m+2],   P[nN+N+m+2],
+									   P[nN+m+2],     P[nN+m+2]);
+			__m256 p_3 = _mm256_set_ps(P[nN+3*N+m+3], P[nN+3*N+m+3],
+									   P[nN+2*N+m+3], P[nN+2*N+m+3],
+									   P[nN+N+m+3],   P[nN+N+m+3],
+									   P[nN+m+3],     P[nN+m+3]);
+			__m256 p_4 = _mm256_set_ps(P[nN+3*N+m+4], P[nN+3*N+m+4],
+									   P[nN+2*N+m+4], P[nN+2*N+m+4],
+									   P[nN+N+m+4],   P[nN+N+m+4],
+									   P[nN+m+4],     P[nN+m+4]);
+			__m256 p_5 = _mm256_set_ps(P[nN+3*N+m+5], P[nN+3*N+m+5],
+									   P[nN+2*N+m+5], P[nN+2*N+m+5],
+									   P[nN+N+m+5],   P[nN+N+m+5],
+									   P[nN+m+5],     P[nN+m+5]);
+			__m256 p_6 = _mm256_set_ps(P[nN+3*N+m+6], P[nN+3*N+m+6],
+									   P[nN+2*N+m+6], P[nN+2*N+m+6],
+									   P[nN+N+m+6],   P[nN+N+m+6],
+									   P[nN+m+6],     P[nN+m+6]);
+			__m256 p_7 = _mm256_set_ps(P[nN+3*N+m+7], P[nN+3*N+m+7],
+									   P[nN+2*N+m+7], P[nN+2*N+m+7],
+									   P[nN+N+m+7],   P[nN+N+m+7],
+									   P[nN+m+7],     P[nN+m+7]);
+
+			__m256 q_0 = _mm256_set_ps(Q[nN+3*N+m],   Q[nN+3*N+m],
+									   Q[nN+2*N+m],   Q[nN+2*N+m],
+									   Q[nN+N+m],     Q[nN+N+m],
+									   Q[nN+m],       Q[nN+m]);
+			__m256 q_1 = _mm256_set_ps(Q[nN+3*N+m+1], Q[nN+3*N+m+1],
+									   Q[nN+2*N+m+1], Q[nN+2*N+m+1],
+									   Q[nN+N+m+1],   Q[nN+N+m+1],
+									   Q[nN+m+1],     Q[nN+m+1]);
+			__m256 q_2 = _mm256_set_ps(Q[nN+3*N+m+2], Q[nN+3*N+m+2],
+									   Q[nN+2*N+m+2], Q[nN+2*N+m+2],
+									   Q[nN+N+m+2],   Q[nN+N+m+2],
+									   Q[nN+m+2],     Q[nN+m+2]);
+			__m256 q_3 = _mm256_set_ps(Q[nN+3*N+m+3], Q[nN+3*N+m+3],
+									   Q[nN+2*N+m+3], Q[nN+2*N+m+3],
+									   Q[nN+N+m+3],   Q[nN+N+m+3],
+									   Q[nN+m+3],     Q[nN+m+3]);
+			__m256 q_4 = _mm256_set_ps(Q[nN+3*N+m+4], Q[nN+3*N+m+4],
+									   Q[nN+2*N+m+4], Q[nN+2*N+m+4],
+									   Q[nN+N+m+4],   Q[nN+N+m+4],
+									   Q[nN+m+4],     Q[nN+m+4]);
+			__m256 q_5 = _mm256_set_ps(Q[nN+3*N+m+5], Q[nN+3*N+m+5],
+									   Q[nN+2*N+m+5], Q[nN+2*N+m+5],
+									   Q[nN+N+m+5],   Q[nN+N+m+5],
+									   Q[nN+m+5],     Q[nN+m+5]);
+			__m256 q_6 = _mm256_set_ps(Q[nN+3*N+m+6], Q[nN+3*N+m+6],
+									   Q[nN+2*N+m+6], Q[nN+2*N+m+6],
+									   Q[nN+N+m+6],   Q[nN+N+m+6],
+									   Q[nN+m+6],     Q[nN+m+6]);
+			__m256 q_7 = _mm256_set_ps(Q[nN+3*N+m+7], Q[nN+3*N+m+7],
+									   Q[nN+2*N+m+7], Q[nN+2*N+m+7],
+									   Q[nN+N+m+7],   Q[nN+N+m+7],
+									   Q[nN+m+7],     Q[nN+m+7]);
+
+			__m256 Ynm_0 = _mm256_sub_ps(Yn, Ym_0);
+			__m256 Ynm_1 = _mm256_sub_ps(Yn, Ym_1);
+			__m256 Ynm_2 = _mm256_sub_ps(Yn, Ym_2);
+			__m256 Ynm_3 = _mm256_sub_ps(Yn, Ym_3);
+			__m256 Ynm_4 = _mm256_sub_ps(Yn, Ym_4);
+			__m256 Ynm_5 = _mm256_sub_ps(Yn, Ym_5);
+			__m256 Ynm_6 = _mm256_sub_ps(Yn, Ym_6);
+			__m256 Ynm_7 = _mm256_sub_ps(Yn, Ym_7);
+
+			__m256 qq_0 = _mm256_mul_ps(q_0, inv_q);
+			__m256 qq_1 = _mm256_mul_ps(q_1, inv_q);
+			__m256 qq_2 = _mm256_mul_ps(q_2, inv_q);
+			__m256 qq_3 = _mm256_mul_ps(q_3, inv_q);
+			__m256 qq_4 = _mm256_mul_ps(q_4, inv_q);
+			__m256 qq_5 = _mm256_mul_ps(q_5, inv_q);
+			__m256 qq_6 = _mm256_mul_ps(q_6, inv_q);
+			__m256 qq_7 = _mm256_mul_ps(q_7, inv_q);
+
+			__m256 pqq_0 = _mm256_sub_ps(p_0, qq_0);
+			__m256 pqq_1 = _mm256_sub_ps(p_1, qq_1);
+			__m256 pqq_2 = _mm256_sub_ps(p_2, qq_2);
+			__m256 pqq_3 = _mm256_sub_ps(p_3, qq_3);
+			__m256 pqq_4 = _mm256_sub_ps(p_4, qq_4);
+			__m256 pqq_5 = _mm256_sub_ps(p_5, qq_5);
+			__m256 pqq_6 = _mm256_sub_ps(p_6, qq_6);
+			__m256 pqq_7 = _mm256_sub_ps(p_7, qq_7);
+
+			__m256 yq_0 = _mm256_mul_ps(Ynm_0, q_0);
+			__m256 yq_1 = _mm256_mul_ps(Ynm_1, q_1);
+			__m256 yq_2 = _mm256_mul_ps(Ynm_2, q_2);
+			__m256 yq_3 = _mm256_mul_ps(Ynm_3, q_3);
+			__m256 yq_4 = _mm256_mul_ps(Ynm_4, q_4);
+			__m256 yq_5 = _mm256_mul_ps(Ynm_5, q_5);
+			__m256 yq_6 = _mm256_mul_ps(Ynm_6, q_6);
+			__m256 yq_7 = _mm256_mul_ps(Ynm_7, q_7);
+
+			__m256 dC_0 = _mm256_mul_ps(pqq_0, yq_0);
+			__m256 dC_1 = _mm256_mul_ps(pqq_1, yq_1);
+			__m256 dC_2 = _mm256_mul_ps(pqq_2, yq_2);
+			__m256 dC_3 = _mm256_mul_ps(pqq_3, yq_3);
+			__m256 dC_4 = _mm256_mul_ps(pqq_4, yq_4);
+			__m256 dC_5 = _mm256_mul_ps(pqq_5, yq_5);
+			__m256 dC_6 = _mm256_mul_ps(pqq_6, yq_6);
+			__m256 dC_7 = _mm256_mul_ps(pqq_7, yq_7);
+
+
+			__m256 dC_8 = _mm256_add_ps(dC_0, dC_1);
+			__m256 dC_9 = _mm256_add_ps(dC_2, dC_3);
+			__m256 dC_10 = _mm256_add_ps(dC_4, dC_5);
+			__m256 dC_11 = _mm256_add_ps(dC_6, dC_7);
+
+			__m256 dC_12 = _mm256_add_ps(dC_8, dC_9);
+			__m256 dC_13 = _mm256_add_ps(dC_10, dC_11);
+
+			__m256 dC_14 = _mm256_add_ps(dC_12, dC_13);
+
+			dC_n = _mm256_add_ps(dC_n, dC_14);
+
+			mD += M * D;
+		}
+
+		_mm256_storeu_ps(dC + nD, dC_n);
+
+		nN += B * N;
+		nD += B * D;
+	}
+}
+
+
+inline void unfold_d_unfold_mx4_vec(float* Y, float* P, float* Q, float sum_Q,
+									int N, int D, float* dC) {
+	const int M = 4;
+	const int B = 4;
+
+	// Perform the computation of the gradient
+	int nN = 0;
+	int nD = 0;
+
+	float inv_sum_Q = 1 / sum_Q;
+	__m256 inv_q = _mm256_set1_ps(inv_sum_Q);
+
+	for(int n = 0; n < N; n += B) {
+		int mD = 0;
+
+		__m256 dC_n = _mm256_setzero_ps();
+		__m256 Yn   = _mm256_loadu_ps(Y + nD);
+
+		for (int m = 0; m < N; m += M) {
+			__m256 Ym_0 = _mm256_set_ps(Y[mD+1],     Y[mD],
+										Y[mD+1],     Y[mD],
+										Y[mD+1],     Y[mD],
+										Y[mD+1],     Y[mD]);
+			__m256 Ym_1 = _mm256_set_ps(Y[mD+D+1],   Y[mD+D],
+										Y[mD+D+1],   Y[mD+D],
+										Y[mD+D+1],   Y[mD+D],
+										Y[mD+D+1],   Y[mD+D]);
+			__m256 Ym_2 = _mm256_set_ps(Y[mD+2*D+1], Y[mD+2*D],
+										Y[mD+2*D+1], Y[mD+2*D],
+										Y[mD+2*D+1], Y[mD+2*D],
+										Y[mD+2*D+1], Y[mD+2*D]);
+			__m256 Ym_3 = _mm256_set_ps(Y[mD+3*D+1], Y[mD+3*D],
+										Y[mD+3*D+1], Y[mD+3*D],
+										Y[mD+3*D+1], Y[mD+3*D],
+										Y[mD+3*D+1], Y[mD+3*D]);
+
+			__m256 p_0 = _mm256_set_ps(P[nN+3*N+m],   P[nN+3*N+m],
+									   P[nN+2*N+m],   P[nN+2*N+m],
+									   P[nN+N+m],     P[nN+N+m],
+									   P[nN+m],       P[nN+m]);
+			__m256 p_1 = _mm256_set_ps(P[nN+3*N+m+1], P[nN+3*N+m+1],
+									   P[nN+2*N+m+1], P[nN+2*N+m+1],
+									   P[nN+N+m+1],   P[nN+N+m+1],
+									   P[nN+m+1],     P[nN+m+1]);
+			__m256 p_2 = _mm256_set_ps(P[nN+3*N+m+2], P[nN+3*N+m+2],
+									   P[nN+2*N+m+2], P[nN+2*N+m+2],
+									   P[nN+N+m+2],   P[nN+N+m+2],
+									   P[nN+m+2],     P[nN+m+2]);
+			__m256 p_3 = _mm256_set_ps(P[nN+3*N+m+3], P[nN+3*N+m+3],
+									   P[nN+2*N+m+3], P[nN+2*N+m+3],
+									   P[nN+N+m+3],   P[nN+N+m+3],
+									   P[nN+m+3],     P[nN+m+3]);
+
+			__m256 q_0 = _mm256_set_ps(Q[nN+3*N+m],   Q[nN+3*N+m],
+									   Q[nN+2*N+m],   Q[nN+2*N+m],
+									   Q[nN+N+m],     Q[nN+N+m],
+									   Q[nN+m],       Q[nN+m]);
+			__m256 q_1 = _mm256_set_ps(Q[nN+3*N+m+1], Q[nN+3*N+m+1],
+									   Q[nN+2*N+m+1], Q[nN+2*N+m+1],
+									   Q[nN+N+m+1],   Q[nN+N+m+1],
+									   Q[nN+m+1],     Q[nN+m+1]);
+			__m256 q_2 = _mm256_set_ps(Q[nN+3*N+m+2], Q[nN+3*N+m+2],
+									   Q[nN+2*N+m+2], Q[nN+2*N+m+2],
+									   Q[nN+N+m+2],   Q[nN+N+m+2],
+									   Q[nN+m+2],     Q[nN+m+2]);
+			__m256 q_3 = _mm256_set_ps(Q[nN+3*N+m+3], Q[nN+3*N+m+3],
+									   Q[nN+2*N+m+3], Q[nN+2*N+m+3],
+									   Q[nN+N+m+3],   Q[nN+N+m+3],
+									   Q[nN+m+3],     Q[nN+m+3]);
 
 			__m256 Ynm_0 = _mm256_sub_ps(Yn, Ym_0);
 			__m256 Ynm_1 = _mm256_sub_ps(Yn, Ym_1);
@@ -108,18 +295,18 @@ inline void unfold_d_unfold_mx4_vec(float* Y, float* P, float* Q, float sum_Q,
 
 			dC_n = _mm256_add_ps(dC_n, dC_6);
 
-			mD += M*D;
+			mD += M * D;
 		}
 
 		_mm256_storeu_ps(dC + nD, dC_n);
 
-		nN += B*N;
-		nD += B*D;
+		nN += B * N;
+		nD += B * D;
 	}
 }
 
 inline void unfold_d_unfold_mx8(float* Y, float* P, float* Q, float sum_Q,
-						 int N, int D, float* dC) {
+								int N, int D, float* dC) {
 	int M = 8;
 
 	// Perform the computation of the gradient

@@ -42,6 +42,7 @@ void register_functions() {
     add_function(&unfold_d_unfold_mx4,(char *) "unfold_d_unfold_mx4");
     add_function(&unfold_d_unfold_mx8,(char *) "unfold_d_unfold_mx8");
     add_function(&unfold_d_unfold_mx4_vec,(char *) "unfold_d_unfold_mx4_vec");
+    add_function(&unfold_d_unfold_mx8_vec,(char *) "unfold_d_unfold_mx8_vec");
 }
 
 /*
