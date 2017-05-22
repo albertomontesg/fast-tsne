@@ -12,6 +12,10 @@ START=200
 STOP=3000
 INTERVAL=200
 
+#START=20
+#STOP=300
+#INTERVAL=20
+
 # Compiler flags for benchmarking
 FLAGS1="-O3 -std=c++11"
 FLAGS2="-O3 -std=c++11 -march=native"
@@ -21,7 +25,7 @@ FLAGS3="-O3 -std=c++11 -march=native -ffast-math"
 MAX_ITER=1000       # Maximum number of iterations
 DIMS=2              # Output dim
 INPUT_DIMS=512      # Input dim for generated data
-#INPUT_DIMS=64
+#INPUT_DIMS=8
 PERPLEXITY=50       # Perplexity best value
 
 
@@ -92,7 +96,7 @@ case $MODE in
                     printf " DONE\n"
                 done;
                 echo "plotting"
-                python3 ./benchmarking/benchmarking_input_dimension.py $TODAY $COMPILER $COMPILER_FLAGS
+                python3 ./benchmarking/benchmarking_default.py $TODAY $COMPILER $COMPILER_FLAGS
                 echo "Finished Successfully"
                 ;;
             "data_type")
