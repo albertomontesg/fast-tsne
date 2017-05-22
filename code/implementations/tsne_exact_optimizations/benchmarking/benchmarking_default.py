@@ -46,6 +46,6 @@ perf_func.append(ff/cy[:,:-1])
 
 # Plot the performance plot.
 title = "t-SNE Exact Computation Performance on Intel Xeon E3-1285Lv5 Skylake, 3.0-3.6GHz"
-plot(N, perf, labels=["default"], title=title, store=True, store_name=file_prefix)
+plot(N, perf, labels=[compiler + ", flags: " + flags], title=title, store=True, store_name=file_prefix)
 
 
