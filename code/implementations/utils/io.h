@@ -74,7 +74,6 @@ bool load_data(dt* data, int n, int* d, char* data_file) {
             printf("\n");
         }
     }
-    printf("before returning loaded data\n");
     free(raw_data); raw_data = NULL;
     return true;
 }
