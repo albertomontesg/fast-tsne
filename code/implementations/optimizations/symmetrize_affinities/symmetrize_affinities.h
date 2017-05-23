@@ -78,109 +78,191 @@ inline void unrolling(float* P, int N, float scale) {
 }
 
 inline void blocking(float* P, int N, float scale) {
-	int nN = 0;
+	int nN = 0; 
 	float sum_P = .0;
-	int m = 0;
-	//build 2*2 blocks an compute with them
-	for(int n = 0; n < N; n+=8) {
-		int mN = (n + 1) * N;
+    __m256 sum_P_vector = _mm256_setzero_ps();
+	int m = 0; int n=0;
+	//build 8*8 blocks an compute with them
+	for(n = 0; n < N; n+=8) {
+		int mN = nN; // mN: start of block 
+        int mN_transpose = n*N + n; // start of transposed block
 		for(m = n; m < N; m+=8) {
-			int nNm = nN + m;
-			int k1 = nNm + N;
-			int k2 = nNm + 2*N;
-			int k3 = nNm + 3*N;
-			int k4 = nNm + 4*N; 
-			int k5 = nNm + 5*N;
-			int k6 = nNm + 6*N;
-			int k7 = nNm + 7*N;
+            // Load first blocks (correspond to rows)
+            int row0_index = mN;
+			int row1_index = mN + N;
+			int row2_index = mN + 2*N;
+			int row3_index = mN + 3*N;
+			int row4_index = mN + 4*N; 
+			int row5_index = mN + 5*N;
+			int row6_index = mN + 6*N;
+			int row7_index = mN + 7*N;
 
-			__m256 rowb1_1 = _mm256_loadu_ps(P+nNm);
-			__m256 rowb1_2 = _mm256_loadu_ps(P+k1);
-			__m256 rowb1_3 = _mm256_loadu_ps(P+k2);
-			__m256 rowb1_4 = _mm256_loadu_ps(P+k3);
-			__m256 rowb1_5 = _mm256_loadu_ps(P+k4);
-			__m256 rowb1_6 = _mm256_loadu_ps(P+k5);
-			__m256 rowb1_7 = _mm256_loadu_ps(P+k6);
-			__m256 rowb1_8 = _mm256_loadu_ps(P+k7);
+			__m256 row0 = _mm256_loadu_ps(P+row0_index);
+			__m256 row1 = _mm256_loadu_ps(P+row1_index);
+			__m256 row2 = _mm256_loadu_ps(P+row2_index);
+			__m256 row3 = _mm256_loadu_ps(P+row3_index);
+			__m256 row4 = _mm256_loadu_ps(P+row4_index);
+			__m256 row5 = _mm256_loadu_ps(P+row5_index);
+			__m256 row6 = _mm256_loadu_ps(P+row6_index);
+			__m256 row7 = _mm256_loadu_ps(P+row7_index);
 
-			int mNn = mN + n;
-			int i1 = mNn + N;
-			int i2 = mNn + 2*N;
-			int i3 = mNn + 3*N;
-			int i4 = mNn + 4*N; 
-			int i5 = mNn + 5*N;
-			int i6 = mNn + 6*N;
-			int i7 = mNn + 7*N;
+			int mN_transpose = m*N + n; // start of transposed block
+			int col_index0 = mN_transpose;
+			int col_index1 = mN_transpose + N;
+			int col_index2 = mN_transpose + 2*N;
+			int col_index3 = mN_transpose + 3*N;
+			int col_index4 = mN_transpose + 4*N; 
+			int col_index5 = mN_transpose + 5*N;
+			int col_index6 = mN_transpose + 6*N;
+			int col_index7 = mN_transpose + 7*N;
 
-			__m256 rowb2_1 = _mm256_loadu_ps(P+mNn);
-			__m256 rowb2_2 = _mm256_loadu_ps(P+i1);
-			__m256 rowb2_3 = _mm256_loadu_ps(P+i2);
-			__m256 rowb2_4 = _mm256_loadu_ps(P+i3);
-			__m256 rowb2_5 = _mm256_loadu_ps(P+i4);
-			__m256 rowb2_6 = _mm256_loadu_ps(P+i5);
-			__m256 rowb2_7 = _mm256_loadu_ps(P+i6);
-			__m256 rowb2_8 = _mm256_loadu_ps(P+i7);
+			__m256 col0 = _mm256_loadu_ps(P+col_index0);
+			__m256 col1 = _mm256_loadu_ps(P+col_index1);
+			__m256 col2 = _mm256_loadu_ps(P+col_index2);
+			__m256 col3 = _mm256_loadu_ps(P+col_index3);
+			__m256 col4 = _mm256_loadu_ps(P+col_index4);
+			__m256 col5 = _mm256_loadu_ps(P+col_index5);
+			__m256 col6 = _mm256_loadu_ps(P+col_index6);
+			__m256 col7 = _mm256_loadu_ps(P+col_index7);
 
-			__m256 rc1 = _mm256_add_ps(rowb2_1,rowb1_1);
-			__m256 rc2 = _mm256_add_ps(rowb2_2,rowb1_2);
-			__m256 rc3 = _mm256_add_ps(rowb2_3,rowb1_3);
-			__m256 rc4 = _mm256_add_ps(rowb2_4,rowb1_4);
-			__m256 rc5 = _mm256_add_ps(rowb2_5,rowb1_5);
-			__m256 rc6 = _mm256_add_ps(rowb2_6,rowb1_6);
-			__m256 rc7 = _mm256_add_ps(rowb2_7,rowb1_7);
-			__m256 rc8 = _mm256_add_ps(rowb2_8,rowb1_8);
 
-			__m256 rowb1_1_new = _mm256_set_ps(rc8[0],rc7[0],rc6[0],rc5[0],rc4[0],rc3[0],rc2[0],rc1[0]);
-			__m256 rowb1_2_new = _mm256_set_ps(rc8[1],rc7[1],rc6[1],rc5[1],rc4[1],rc3[1],rc2[1],rc1[1]);
-			__m256 rowb1_3_new = _mm256_set_ps(rc8[2],rc7[2],rc6[2],rc5[2],rc4[2],rc3[2],rc2[2],rc1[2]);
-			__m256 rowb1_4_new = _mm256_set_ps(rc8[3],rc7[3],rc6[3],rc5[3],rc4[3],rc3[3],rc2[3],rc1[3]);
-			__m256 rowb1_5_new = _mm256_set_ps(rc8[4],rc7[4],rc6[4],rc5[4],rc4[4],rc3[4],rc2[4],rc1[4]);
-			__m256 rowb1_6_new = _mm256_set_ps(rc8[5],rc7[5],rc6[5],rc5[5],rc4[5],rc3[5],rc2[5],rc1[5]);
-			__m256 rowb1_7_new = _mm256_set_ps(rc8[6],rc7[6],rc6[6],rc5[6],rc4[6],rc3[6],rc2[6],rc1[6]);
-			__m256 rowb1_8_new = _mm256_set_ps(rc8[7],rc7[7],rc6[7],rc5[7],rc4[7],rc3[7],rc2[7],rc1[7]);
+            // instead of transposing one block, adding together, storing back one, storing back 2nd transposed, we do:
+            // transposing both blocks, adding together each, then can do store both aligned
+            __m256 row_transposed0 = _mm256_set_ps(col0[0],col1[0],col2[0],col3[0],
+                    col4[0],col5[0],col6[0],col7[0]);
+            __m256 row_transposed1 = _mm256_set_ps(col0[1],col1[1],col2[1],col3[1],
+                    col4[1],col5[1],col6[1],col7[0]);
+            __m256 row_transposed2 = _mm256_set_ps(col0[2],col1[2],col2[2],col3[2],
+                    col4[2],col5[2],col6[2],col7[2]);
+            __m256 row_transposed3 = _mm256_set_ps(col0[3],col1[3],col2[3],col3[3],
+                    col4[3],col5[3],col6[3],col7[3]);
+            __m256 row_transposed4 = _mm256_set_ps(col0[4],col1[4],col2[4],col3[4],
+                    col4[4],col5[4],col6[4],col7[4]);
+            __m256 row_transposed5 = _mm256_set_ps(col0[5],col1[5],col2[5],col3[5],
+                    col4[5],col5[5],col6[5],col7[5]);
+            __m256 row_transposed6 = _mm256_set_ps(col0[6],col1[6],col2[6],col3[6],
+                    col4[6],col5[6],col6[6],col7[6]);
+            __m256 row_transposed7 = _mm256_set_ps(col0[7],col1[7],col2[7],col3[7],
+                    col4[7],col5[7],col6[7],col7[7]);
 
-			//if(m == n){ //our block has a diagonal crossing
-				//in this case we have to divide the diagonal elements by 2
-				//but the numbers are so small anyway so its fine? MIN_VAL for the diag 
-			
-			//}else{
-				_mm256_storeu_ps(P+nNm,rowb1_1_new);	
-				_mm256_storeu_ps(P+k1,rowb1_1_new);	
-				_mm256_storeu_ps(P+k2,rowb1_2_new);	
-				_mm256_storeu_ps(P+k3,rowb1_3_new);	
-				_mm256_storeu_ps(P+k4,rowb1_4_new);	
-				_mm256_storeu_ps(P+k5,rowb1_5_new);	
-				_mm256_storeu_ps(P+k6,rowb1_6_new);	
-				_mm256_storeu_ps(P+k7,rowb1_7_new);
+            __m256 col_transposed0 = _mm256_set_ps(row0[0],row1[0],row2[0],row3[0],
+                    row4[0],row5[0],row6[0],row7[0]);
+            __m256 col_transposed1 = _mm256_set_ps(row0[1],row1[1],row2[1],row3[1],
+                    row4[1],row5[1],row6[1],row7[0]);
+            __m256 col_transposed2 = _mm256_set_ps(row0[2],row1[2],row2[2],row3[2],
+                    row4[2],row5[2],row6[2],row7[2]);
+            __m256 col_transposed3 = _mm256_set_ps(row0[3],row1[3],row2[3],row3[3],
+                    row4[3],row5[3],row6[3],row7[3]);
+            __m256 col_transposed4 = _mm256_set_ps(row0[4],row1[4],row2[4],row3[4],
+                    row4[4],row5[4],row6[4],row7[4]);
+            __m256 col_transposed5 = _mm256_set_ps(row0[5],row1[5],row2[5],row3[5],
+                    row4[5],row5[5],row6[5],row7[5]);
+            __m256 col_transposed6 = _mm256_set_ps(row0[6],row1[6],row2[6],row3[6],
+                    row4[6],row5[6],row6[6],row7[6]);
+            __m256 col_transposed7 = _mm256_set_ps(row0[7],row1[7],row2[7],row3[7],
+                    row4[7],row5[7],row6[7],row7[7]);
 
-				_mm256_storeu_ps(P+mNn,rc1);	
-				_mm256_storeu_ps(P+i1,rc2);	
-				_mm256_storeu_ps(P+i2,rc3);	
-				_mm256_storeu_ps(P+i3,rc4);	
-				_mm256_storeu_ps(P+i4,rc5);	
-				_mm256_storeu_ps(P+i5,rc6);	
-				_mm256_storeu_ps(P+i6,rc7);	
-				_mm256_storeu_ps(P+i7,rc8);
 
-			//}
-			mN += 8*N;
+            
+            __m256 row0_sum = _mm256_add_ps(row0,row_transposed0);
+			__m256 row1_sum = _mm256_add_ps(row1,row_transposed1);
+			__m256 row2_sum = _mm256_add_ps(row2,row_transposed2);
+			__m256 row3_sum = _mm256_add_ps(row3,row_transposed3);
+			__m256 row4_sum = _mm256_add_ps(row4,row_transposed4);
+			__m256 row5_sum = _mm256_add_ps(row5,row_transposed5);
+			__m256 row6_sum = _mm256_add_ps(row6,row_transposed6);
+			__m256 row7_sum = _mm256_add_ps(row7,row_transposed7);
+
+            __m256 col0_sum = _mm256_add_ps(col0,col_transposed0);
+			__m256 col1_sum = _mm256_add_ps(col1,col_transposed1);
+			__m256 col2_sum = _mm256_add_ps(col2,col_transposed2);
+			__m256 col3_sum = _mm256_add_ps(col3,col_transposed3);
+			__m256 col4_sum = _mm256_add_ps(col4,col_transposed4);
+			__m256 col5_sum = _mm256_add_ps(col5,col_transposed5);
+			__m256 col6_sum = _mm256_add_ps(col6,col_transposed6);
+			__m256 col7_sum = _mm256_add_ps(col7,col_transposed7);
+
+
+			_mm256_storeu_ps(P+row0_index,row0_sum);	
+			_mm256_storeu_ps(P+row1_index,row1_sum);	
+			_mm256_storeu_ps(P+row2_index,row2_sum);	
+			_mm256_storeu_ps(P+row3_index,row3_sum);	
+			_mm256_storeu_ps(P+row4_index,row4_sum);	
+			_mm256_storeu_ps(P+row5_index,row5_sum);	
+			_mm256_storeu_ps(P+row6_index,row6_sum);	
+			_mm256_storeu_ps(P+row7_index,row7_sum);
+
+			_mm256_storeu_ps(P+col_index0,col0_sum);	
+			_mm256_storeu_ps(P+col_index1,col1_sum);	
+			_mm256_storeu_ps(P+col_index2,col2_sum);	
+			_mm256_storeu_ps(P+col_index3,col3_sum);	
+			_mm256_storeu_ps(P+col_index4,col4_sum);	
+			_mm256_storeu_ps(P+col_index5,col5_sum);	
+			_mm256_storeu_ps(P+col_index6,col6_sum);	
+			_mm256_storeu_ps(P+col_index7,col7_sum);
+
+
+            // additionally sum the elements
+            __m256 sum_P_helper1 = _mm256_add_ps(row0_sum, row1_sum);
+            __m256 sum_P_helper2 = _mm256_add_ps(row2_sum, row3_sum);
+            __m256 sum_P_helper3 = _mm256_add_ps(row4_sum, row5_sum);
+            __m256 sum_P_helper4 = _mm256_add_ps(row6_sum, row7_sum);
+            sum_P_helper1 = _mm256_add_ps(sum_P_helper1, sum_P_helper2);
+            sum_P_helper3 = _mm256_add_ps(sum_P_helper3, sum_P_helper4);
+            sum_P_helper1 = _mm256_add_ps(sum_P_helper1, sum_P_helper3);
+            sum_P_vector = _mm256_add_ps(sum_P_vector, sum_P_helper1);
+
+            // all elements that are in the diagonal are counted two times, so half them afterwards
+            // also remove 2nd sum term
+            if(n==m){
+                P[mN] *= 0.5;
+                sum_P -= P[mN];
+                P[mN + N + 1] *= 0.5;
+                sum_P -= P[mN + 1*N + 1];
+                P[mN + 2*N + 2] *= 0.5; // all elements of diagonal in current block
+                sum_P -= P[mN + 2*N + 2];
+                P[mN + 3*N + 3] *= 0.5; 
+                sum_P -= P[mN + 3*N + 3];
+                P[mN + 4*N + 4] *= 0.5;
+                sum_P -= P[mN + 4*N + 4];
+                P[mN + 5*N + 5] *= 0.5; 
+                sum_P -= P[mN + 5*N + 5];
+                P[mN + 6*N + 6] *= 0.5;
+                sum_P -= P[mN + 6*N + 6];
+                P[mN + 7*N + 7] *= 0.5;
+                sum_P -= P[mN + 7*N + 7];
+                }
+
+			mN += 8; // next block
+            mN_transpose += N; // next transposed block
 
 		}
-
-		//if N is not multiplicative factor of 8 do the rest sequentially
-		for (int i = m; i < N; ++i)
-		{
-			P[nN + i] += P[mN + n];
-			P[mN + n]  = P[nN + i];
-			mN += N;
-		}
-
-		nN += N;
+		nN += N; // next row
 	}
 
+    //TODO: N not dividable by 8 case. Further optimizable?
+    if(N%8 != 0){
+        int nN = N * ((n-8)+1);
+        for (int n = (n-8)+1; n < N; ++n){// where left off
+    		int mN = 0; 
+            for(int m = 0; m < N; m++) {
+                if(m==n){
+                    mN += N;
+                    continue;
+                }
+	    		P[nN + m] += P[mN + n];
+		    	P[mN + n]  = P[nN + m];
+                sum_P += P[nN +m];
+			    mN += N;
+		    }
+		    nN += N;
+	    }
+    }
 
 	//compute the sum_S
-	
+    __m256 s = _mm256_hadd_ps(sum_P_vector,sum_P_vector);
+    sum_P +=  s[0] + s[1] + s[4] + s[5];
+
 	__m256 scale_vec = _mm256_set1_ps(scale);
 	__m256 sum_vec = _mm256_set1_ps(sum_P);
 	__m256 scale_sum_vec = _mm256_div_ps(scale_vec,sum_vec);
