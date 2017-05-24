@@ -53,3 +53,5 @@ datum
 
 #  Binary files
 bin
+
+.remote-sync.json
