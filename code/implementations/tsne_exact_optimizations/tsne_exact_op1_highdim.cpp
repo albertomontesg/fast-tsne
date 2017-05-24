@@ -45,7 +45,7 @@ void run(dt* X, int N, int D, dt* Y, int no_dims, dt perplexity,
 	// Compute pairsiwe affinity with perplexity which include binary search
 	// for the best perplexity value
 	dt* P = (dt*) calloc(N * N, sizeof(dt));
-	dt* DD = (dt*) malloc(N * N * sizeof(dt));
+	dt* DD = (dt*) _mm_malloc(N * N * sizeof(dt),32);
 	if(P == NULL) { printf("[P] Memory allocation failed!\n"); exit(1); }
 	if(DD == NULL) { printf("[DD] Memory allocation failed!\n"); exit(1); }
 	#ifdef BENCHMARK
@@ -91,11 +91,11 @@ void run(dt* X, int N, int D, dt* Y, int no_dims, dt perplexity,
 
 
 	// Initialize Q low dimensionality affinity matrix and gradient dC
-	dt* Q = (dt*) malloc(N * N * sizeof(dt));
-	dt* dC = (dt*) malloc(N * no_dims * sizeof(dt));
+	dt* Q = (dt*) _mm_malloc(N * N * sizeof(dt),32);
+	dt* dC = (dt*) _mm_malloc(N * no_dims * sizeof(dt), 32);
 	dt* uY = (dt*) calloc(N * no_dims, sizeof(dt));
-	dt* gains = (dt*) malloc(N * no_dims * sizeof(dt));
-	dt* mean = (dt*) malloc(no_dims * sizeof(dt));
+	dt* gains = (dt*) _mm_malloc(N * no_dims * sizeof(dt), 32);
+	dt* mean = (dt*) _mm_malloc(no_dims * sizeof(dt), 32);
 	if(Q == NULL) { printf("[Q] Memory allocation failed!\n"); exit(1); }
 	if(dC == NULL) { printf("[dC] Memory allocation failed!\n"); exit(1); }
 	if(uY == NULL) { printf("[uY] Memory allocation failed!\n"); exit(1); }
@@ -253,9 +253,9 @@ int main(int argc, char **argv) {
 
 	// Define some variables
 	int D;
-	dt* data = (dt*) malloc(N * inputDim * sizeof(double));
-	dt* X = (dt*) malloc(N * inputDim * sizeof(dt));
-    dt* Y = (dt*) malloc(N * no_dims * sizeof(dt));
+	dt* data = (dt*) _mm_malloc(N * inputDim * sizeof(double),32);
+	dt* X = (dt*) _mm_malloc(N * inputDim * sizeof(dt),32);
+    dt* Y = (dt*) _mm_malloc(N * no_dims * sizeof(dt),32);
     if(data == NULL) { printf("[data] Memory allocation failed!\n"); exit(1); }
     if(X == NULL) { printf("[X] Memory allocation failed!\n"); exit(1); }
     if(Y == NULL ) { printf("[Y] Memory allocation failed!\n"); exit(1); }
