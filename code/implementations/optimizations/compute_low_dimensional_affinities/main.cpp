@@ -41,8 +41,11 @@ void register_functions() {
     // add_function(&blocking_4_block_4_unfold_sr_vec, (char *) "blocking_4_block_4_unfold_sr_vec");
     // add_function(&blocking_8_block_4_unfold_sr_vec, (char *) "blocking_8_block_4_unfold_sr_vec");
     // add_function(&blocking_16_block_4_unfold_sr_vec, (char *) "blocking_16_block_4_unfold_sr_vec");
-    add_function(&blocking_32_block_4_unfold_sr_vec, (char *) "blocking_32_block_4_unfold_sr_vec");
-    add_function(&blocking_32_block_8_unfold_sr_vec, (char *) "blocking_32_block_8_unfold_sr_vec");
+    // add_function(&blocking_32_block_4_unfold_sr_vec, (char *) "blocking_32_block_4_unfold_sr_vec");
+    // add_function(&blocking_32_block_8_unfold_sr_vec, (char *) "blocking_32_block_8_unfold_sr_vec");
+    add_function(&blocking_16_block_8_unfold_sr_vec_2, (char *) "blocking_16_block_8_unfold_sr_vec_2");
+    add_function(&blocking_32_block_8_unfold_sr_vec_2, (char *) "blocking_32_block_8_unfold_sr_vec_2");
+    add_function(&blocking_64_block_8_unfold_sr_vec_2, (char *) "blocking_64_block_8_unfold_sr_vec_2");
     // add_function(&blocking_64_block_4_unfold_sr_vec, (char *) "blocking_64_block_4_unfold_sr_vec");
 }
 
@@ -65,12 +68,12 @@ void add_function(comp_func f, char *name) {
 }
 
 void build(float ** d, int row, int col) {
-    *d = (float*) malloc(row * col * sizeof(float));
+    *d = (float*) _mm_malloc(row * col * sizeof(float), 32);
     rand_matrix(*d, row, col);
 }
 
 void destroy(float* d) {
-    free(d);
+    _mm_free(d);
     d = NULL;
 }
 
