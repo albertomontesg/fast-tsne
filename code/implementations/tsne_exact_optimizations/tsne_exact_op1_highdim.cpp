@@ -123,93 +123,11 @@ void run(dt* X, int N, int D, dt* Y, int no_dims, dt perplexity,
 		#ifdef BENCHMARK
 		start_training = start_tsc();
 		#endif
-		training_loop(Y, P, Q, N, no_dims, dC, uY, momentum, eta, iter, 250, 1/12.);
+		training_loop(Y, P, Q, N, no_dims, uY, momentum, eta, iter, 250, 1/12.);
 		#ifdef BENCHMARK
 		cycles_training += (double) stop_tsc(start_training);
 		#endif
 
-
-		// // Compute low dimensional affinities
-		// // Reset DD to all 0s
-		// for (int i = 0; i < N * N; i++) DD[i] = 0.;
-		// #ifdef BENCHMARK
-		// start_ld_affinity = start_tsc();
-		// #endif
-		// // Compute
-		// dt sum_Q;
-		// sum_Q = compute_low_dimensional_affinities(Y, N, no_dims, Q, DD);
-		// // End compute
-		// #ifdef BENCHMARK
-		// cycles_ld_affinity += (double) stop_tsc(start_ld_affinity);
-		// #endif
-		// #ifdef NUMERIC_CHECK
-		// if (iter == 0) printf("%lf\n", sum_Q);
-		// if (iter == 0) save_data(Q, N, N, "./datum/Q_0");
-		// if (iter == 300) save_data(Q, N, N, "./datum/Q_300");
-		// #endif
-		//
-		//
-		// // Gradient Computation
-		// // Make sure the gradient contains all zeros
-		// for (int i = 0; i < N * no_dims; i++) dC[i] = 0.;
-		// #ifdef BENCHMARK
-		// start_gradient = start_tsc();
-		// #endif
-		// // Compute
-		// gradient_computation(Y, P, Q, sum_Q, N, no_dims, dC);
-		// // End compute
-		// #ifdef BENCHMARK
-		// cycles_gradient += (double) stop_tsc(start_gradient);
-		// #endif
-		// #ifdef NUMERIC_CHECK
-		// if (iter == 0) save_data(dC, N, no_dims, "./datum/dC_0");
-		// if (iter == 300) save_data(dC, N, no_dims, "./datum/dC_300");
-		// #endif
-		//
-		//
-		// // Perform gradient update
-		// #ifdef BENCHMARK
-		// start_update = start_tsc();
-		// #endif
-		// // Compute
-		// gradient_update(Y, dC, uY, gains, N, no_dims, momentum, eta);
-		// // End compute
-		// #ifdef BENCHMARK
-		// cycles_update += (double) stop_tsc(start_update);
-		// #endif
-		// #ifdef NUMERIC_CHECK
-		// if (iter == 0) save_data(Y, N, no_dims, "./datum/Y_0");
-		// if (iter == 300) save_data(Y, N, no_dims, "./datum/Y_300");
-		// #endif
-		//
-		// // Zero mean to solution Y
-		// for (int i = 0; i < no_dims; i++) mean[i] = 0.;
-        // #ifdef BENCHMARK
-        // start_normalize_2 = start_tsc();
-        // #endif
-		// // Compute
-		// normalize(Y, N, no_dims, mean, 0);
-		// // End compute
-        // #ifdef BENCHMARK
-        // cycles_normalize_2 += (double) stop_tsc(start_normalize_2);
-        // #endif
-		// #ifdef NUMERIC_CHECK
-		// if (iter == 0) save_data(Y, N, no_dims, "./datum/Y_0_normalized");
-		// if (iter == 300) save_data(Y, N, no_dims, "./datum/Y_300_normalized");
-		// #endif
-		//
-        // if (iter == 250) {
-        //     // Stop early exageration
-        //     #ifdef BENCHMARK
-        //     start_early_exageration = start_tsc();
-        //     #endif
-        //     // Compute
-        //     early_exageration(P, N, 1/12.0);
-        //     // End compute
-        //     #ifdef BENCHMARK
-        //     cycles_early_exageration += (double) stop_tsc(start_early_exageration);
-        //     #endif
-        // }
 		// Switch momentum
 		if (iter == 250) momentum = final_momentum;
 	}
@@ -242,7 +160,7 @@ int main(int argc, char **argv) {
     char *result_file = argv[2];
     int N = atoi(argv[3]);
     dt perplexity = (dt) atof(argv[4]);
-    int no_dims = atoi(argv[5]);
+    int no_dims = 2;
     int max_iter = atoi(argv[6]);
     int inputDim = 784;
     if (argc > 7)

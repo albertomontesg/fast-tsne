@@ -1544,7 +1544,7 @@ inline void gradient_update_normalize_fast_vec_avx(float* Y, float* P,
 
 
 inline void training_loop(float* Y, float* P, float* Q, int N,
-						 int D, float* dC, float* uY, float momentum,
+						 int D, float* uY, float momentum,
 						 float eta, int current_it, int early_it, float factor) {
     float sum_Q = low_dimensional_affinities_fast_vec_avx(Y, N, D, Q);
     gradient_update_normalize_fast_vec_avx(Y, P, Q, sum_Q, N, D, uY, momentum, eta, current_it, early_it, factor);

@@ -18,10 +18,10 @@ debug:
 	# $(CC) -DDEBUG $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
 	$(CC) -DDEBUG -DSINGLE_PRECISION $(CFLAGS) $(SRC) -o ./$(BIN_FLOAT)
 	# ./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
-	./$(BIN_FLOAT) ../../../data/mnist/train-images.idx3-ubyte result_f.dat 1000 50 2 1000
+	./$(BIN_FLOAT) ../../../data/mnist/train-images.idx3-ubyte result_f_opt_rcp.dat 1024 50 2 1000
 
 asm:
-	$(CC) $(CFLAGS) -S -fverbose-asm $(SRC) -o ./tsne_d.s
+	# $(CC) $(CFLAGS) -S -fverbose-asm $(SRC) -o ./tsne_d.s
 	$(CC) -DSINGLE_PRECISION $(CFLAGS) -S -fverbose-asm $(SRC) -o ./tsne_f.s
 
 numeric_check_d:
