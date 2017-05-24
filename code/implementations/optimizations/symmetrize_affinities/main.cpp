@@ -37,8 +37,10 @@ void register_functions() {
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    add_function(unrolling, "unrolling");
-    add_function(blocking, "blocking");
+    // add_function(&unrolling, "unrolling");
+    add_function(&blocking, "blocking");
+    add_function(&blocking2, "blocking2");
+    // add_function(&base_version, "base_version");
 }
 
 /*
@@ -60,7 +62,7 @@ void add_function(comp_func f, char *name) {
 }
 
 void build(float ** d, int row, int col) {
-    *d = (float*) malloc(row * col * sizeof(float));
+    *d = (float*) aligned_alloc( 32, row * col * sizeof(float));
     rand_matrix(*d, row, col);
 }
 
@@ -108,8 +110,8 @@ double perf_test(comp_func f, int n) {
         end = stop_tsc(start);
         num_cycles[i] = (double) end;
     }
-    //destroy(P);
-    //destroy(P_copy);
+    destroy(P);
+    destroy(P_copy);
     // Why does this cause a double free error??
     
     std::sort(num_cycles.begin(), num_cycles.end());
@@ -128,8 +130,8 @@ int main(int argc, char **argv) {
     int N = 512;
     float *P1, *P2, *P_copy; float scale=1.0/12.0;
     build(&P1, N, N);
-    P_copy = (float*) malloc( N * N * sizeof(float) );
-    P2 = (float*) malloc( N * N * sizeof(float) );
+    P_copy = (float*) aligned_alloc( 32, N * N * sizeof(float) );
+    P2 = (float*) aligned_alloc( 32, N * N * sizeof(float) );
     std::copy(P1, P1+(N*N), P_copy);
     comp_func base_f = userFuncs[0];
     base_f(P1, N, scale);
@@ -149,9 +151,9 @@ int main(int argc, char **argv) {
             }
         }
     }
-    //destroy(P1);
-    //destroy(P_copy);
-    //destroy(P2);
+    destroy(P1);
+    destroy(P_copy);
+    destroy(P2);
     double cycles;
     printf("N");
     for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
