@@ -102,6 +102,7 @@ double perf_test(comp_func f, int n) {
     for (size_t i = 0; i < num_runs; ++i) {
         // Put here the function
         std::copy(P_copy, P_copy+(n*n), P);
+        for(int j=0; j<n*n; j++) P[j]*=1.001;
         start = start_tsc();
         f(P, n, scale);
         end = stop_tsc(start);
