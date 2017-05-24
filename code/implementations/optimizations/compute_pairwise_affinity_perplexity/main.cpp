@@ -9,6 +9,7 @@
 #include "../../utils/random.h"
 #include "compute_pairwise_affinity_perplexity.h"
 
+
 #define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e5
 #define N_START     8
@@ -34,12 +35,12 @@ void add_function(comp_func f, char *name);
 */
 void register_functions() {
     add_function(&base_version, "base_version");
-    add_function(&scalar_optimization, "subexpression and strength reduction");
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    add_function(&perplexity_unrolling, "unrolling");
-    add_function(&perplexity_blocking, "blocking");
+    // add_function(&unrolling, "unrolling");
+    // add_function(&perplexity_blocking, "blocking");
+    add_function(&base_version, "base_version");
 }
 
 /*
@@ -70,7 +71,7 @@ void destroy(float* d) {
     d = NULL;
 }
 
-double perf_test(comp_func f, int N) {
+double perf_test(comp_func f, int n) {
     double cycles = 0;
     int num_runs = NUM_RUNS;
     int warm_runs = 10;
@@ -78,34 +79,23 @@ double perf_test(comp_func f, int N) {
     double multiplier = 1.0;
 
     // Create the input and output arrays
-    float *P_init, *P;
-    float *X_init, *X;
-    float *DD_init, *DD;
-
+    float *P, *DD, *X; 
     // Input:
-    build(&P_init, N,N);
-    P = (float*)aligned_alloc(32, N*N*sizeof(float));
-    std::copy(P_init, P_init+ N*N, P);
-    
-    build(&X_init, N, D);
-    X = (float*)aligned_alloc(32, N*D*sizeof(float));
-    std::copy(X_init, X_init+ N*D, X);
-
-    build(&DD_init, N, N);
-    DD = (float*)aligned_alloc(32, N*N*sizeof(float));
-    std::copy(DD_init, DD_init+ N*N, DD);
-
+    build(&X, n, D);
+    DD= (float*)aligned_alloc(32, n*n);
+    memset(DD, 0, sizeof(float) * n*n);
+    P = (float*)aligned_alloc(32, n*n);
+    memset(P, 0, sizeof(float) * n*n);
     // Warm up the cache
     do {
-        std::copy(P_init, P_init + N*N, P);
-        std::copy(X_init, X_init + N*D, X);
-        std::copy(DD_init, DD_init + N*N, DD);
         warm_runs = warm_runs * multiplier;
         start = start_tsc();
         for (size_t i = 0; i < num_runs; i++) {
-            f(X, N, D, P, perplexity, DD);
+            f(X, n, D, P, perplexity, DD);
         }
         end = stop_tsc(start);
+        memset(DD, 0, sizeof(float) * n*n);
+        memset(P, 0, sizeof(float) * n*n);
         cycles = (double) end;
         multiplier = (CYCLES_REQUIRED) / (cycles);
 
@@ -114,18 +104,18 @@ double perf_test(comp_func f, int N) {
 
     for (size_t i = 0; i < num_runs; ++i) {
         // Put here the function
-        std::copy(P_init, P_init + N*N, P);
-        std::copy(X_init, X_init + N*D, X);
-        std::copy(DD_init, DD_init + N*N, DD);
         start = start_tsc();
-        f(X, N, D, P, perplexity, DD);
+        f(X, n, D, P, perplexity, DD);
         end = stop_tsc(start);
+        memset(DD, 0, sizeof(float) * n*n);
+        memset(P, 0, sizeof(float) * n*n);
         num_cycles[i] = (double) end;
     }
-    destroy(P); destroy(P_init);
-    destroy(X); destroy(X_init);
-    destroy(DD); destroy(DD_init);
-
+    destroy(P);
+    destroy(DD);
+    destroy(X);
+    // Why does this cause a double free error??
+    
     std::sort(num_cycles.begin(), num_cycles.end());
     int pos = num_runs / 2 + 1;
 
@@ -140,67 +130,52 @@ int main(int argc, char **argv) {
 
     // Check the correct output of the functions
     int N = 512;
-    float *P_init, *P_reference, *P;
-    float *X_init, *X_reference, *X;
-    float *DD_init, *DD_reference, *DD;
-
+    float *P_reference, *DD_reference, *X; 
+    float *P, *DD;
     // Input:
-    build(&P_init, N,N);
-    P_reference = (float*)aligned_alloc(32, N*N*sizeof(float));
-    P = (float*)aligned_alloc(32, N*N*sizeof(float));
-    std::copy(P_init, P_init+ N*N, P_reference);
-    std::copy(P_init, P_init+ N*N, P);
+    build(&X, N, D);
+    DD_reference= (float*)aligned_alloc(32, N*N);
+    P_reference = (float*)aligned_alloc(32, N*N);
+    DD= (float*)aligned_alloc(32, N*N);
+    P = (float*)aligned_alloc(32, N*N);
+    memset(P_reference, 0, sizeof(float) * N*N);
+    memset(DD_reference, 0, sizeof(float) * N*N);
+    memset(DD, 0, sizeof(float) * N*N);
+    memset(P, 0, sizeof(float) * N*N);
     
-    build(&X_init, N, D);
-    X_reference = (float*)aligned_alloc(32, N*D*sizeof(float));
-    X = (float*)aligned_alloc(32, N*D*sizeof(float));
-    std::copy(X_init, X_init+ N*D, X_reference);
-    std::copy(X_init, X_init+ N*D, X);
-
-    build(&DD_init, N, N);
-    DD_reference = (float*)aligned_alloc(32, N*N*sizeof(float));
-    DD = (float*)aligned_alloc(32, N*N*sizeof(float));
-    std::copy(DD_init, DD_init+ N*N, DD_reference);
-    std::copy(DD_init, DD_init+ N*N, DD);
-
     comp_func base_f = userFuncs[0];
-    base_f(X_reference, N, D, P_reference, perplexity, DD_reference);
+    base_f(X, N, D, P_reference, perplexity, DD_reference);
+
     double error = 0.;
     for (int i = 1; i < numFuncs; i++) {
         comp_func f = userFuncs[i];
-        std::copy(P_init, P_init + N*N, P);
-        std::copy(X_init, X_init + N*D, X);
-        std::copy(DD_init, DD_init + N*N, DD);
         f(X, N, D, P, perplexity, DD);
         for (int j = 0; j < N*N; j++) {
             error = fabs(P_reference[j] - P[j]);
             if (error > EPS) {
                 printf("\n");
-                printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position (%d, %d) with n=%d\nError: %lf != %lf\n", funcNames[i], j/N ,j%N, N, P_reference[j], P[j]);
+                printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position %d with n=%d\nError: %lf != %lf\n", funcNames[i], j, N, P_reference[j], P[j]);
                 printf("\n");
-                //exit(1);
+                exit(1);
             }
         }
     }
-
-    destroy(P); destroy(P_reference); destroy(P_init);
-    destroy(X); destroy(X_reference); destroy(X_init);
-    destroy(DD), destroy(DD_reference); destroy(DD_init);
-
+    destroy(X);
+    destroy(P); destroy(DD);
+    destroy(P_reference); destroy(DD_reference);
     double cycles;
     printf("N");
     for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
     printf("\n");
     for (int n = n_start; n <= n_stop; n *= n_interval) {
         printf("%d", n);
- 
+
         for (int i = 0; i < numFuncs; i++) {
             cycles = perf_test(userFuncs[i], n);
             printf(",%lf", cycles);
         }
         printf("\n");
     }
-    
     
     return 0;
 }

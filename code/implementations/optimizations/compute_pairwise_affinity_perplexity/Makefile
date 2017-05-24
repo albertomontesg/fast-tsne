@@ -1,6 +1,5 @@
-CC=icc
-#CFLAGS=-O3 -march=native -mavx -std=c++11
-CFLAGS=-O3 -mavx -std=c++11
+CC=g++
+CFLAGS=-O3 -march=native -mavx -std=c++11
 SRC=main.cpp
 BIN=run.o
 OUT_FILE?=/dev/stdout;
