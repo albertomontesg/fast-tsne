@@ -30,14 +30,14 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
          __m256 accum7 = _mm256_setzero_ps();
          __m256 accum8 = _mm256_setzero_ps();
         for(int n = 0; n < N_leftover_start; n+=8) {
-            __m256 m1 = _mm256_loadu_ps(X + n*D + d);
-            __m256 m2 = _mm256_loadu_ps(X + (n+1)*D + d);
-            __m256 m3 = _mm256_loadu_ps(X + (n+2)*D + d);
-            __m256 m4 = _mm256_loadu_ps(X + (n+3)*D + d);
-            __m256 m5 = _mm256_loadu_ps(X + (n+4)*D + d);
-            __m256 m6 = _mm256_loadu_ps(X + (n+5)*D + d);
-            __m256 m7 = _mm256_loadu_ps(X + (n+6)*D + d);
-            __m256 m8 = _mm256_loadu_ps(X + (n+7)*D + d);
+            __m256 m1 = _mm256_load_ps(X + n*D + d);
+            __m256 m2 = _mm256_load_ps(X + (n+1)*D + d);
+            __m256 m3 = _mm256_load_ps(X + (n+2)*D + d);
+            __m256 m4 = _mm256_load_ps(X + (n+3)*D + d);
+            __m256 m5 = _mm256_load_ps(X + (n+4)*D + d);
+            __m256 m6 = _mm256_load_ps(X + (n+5)*D + d);
+            __m256 m7 = _mm256_load_ps(X + (n+6)*D + d);
+            __m256 m8 = _mm256_load_ps(X + (n+7)*D + d);
             accum1 = _mm256_add_ps(accum1, m1);
             accum2 = _mm256_add_ps(accum2, m2);
             accum3 = _mm256_add_ps(accum3, m3);
@@ -48,7 +48,7 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
             accum8 = _mm256_add_ps(accum8, m8);
         }
         for(int n = N_leftover_start; n < N; n++) {
-            __m256 m1 = _mm256_loadu_ps(X + n*D + d);
+            __m256 m1 = _mm256_load_ps(X + n*D + d);
             accum1 = _mm256_add_ps(accum1, m1);
         }
         __m256 accum12 = _mm256_add_ps(accum1, accum2);
@@ -59,12 +59,12 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
         __m256 accum5678 = _mm256_add_ps(accum56, accum78);
         __m256 accum = _mm256_add_ps(accum1234, accum5678);
         accum = _mm256_mul_ps(oneOverN_avx, accum);
-        _mm256_storeu_ps(mean + d, accum);
+        _mm256_store_ps(mean + d, accum);
 
         for(int n = 0; n < N; n++) {
-            __m256 m1 = _mm256_loadu_ps(X + n*D + d);
+            __m256 m1 = _mm256_load_ps(X + n*D + d);
             m1 = _mm256_sub_ps(m1, accum);
-            _mm256_storeu_ps(X + n* D + d, m1);
+            _mm256_store_ps(X + n* D + d, m1);
             __m256 absx = _mm256_andnot_ps(sign_mask, m1);
             max = _mm256_max_ps(absx, max);
         }
@@ -127,8 +127,8 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
                 int jjDk = jjD;
                 for(int k = 0; k < leftover_start; k+=8)
                 {
-                    const __m256 x = _mm256_loadu_ps(X + iiDk);
-                    const __m256 xj = _mm256_loadu_ps(X + jjDk);
+                    const __m256 x = _mm256_load_ps(X + iiDk);
+                    const __m256 xj = _mm256_load_ps(X + jjDk);
                     const __m256 d = _mm256_sub_ps(x, xj);
                     accum = _mm256_fmadd_ps(d, d, accum);
                     iiDk += 8;
@@ -173,15 +173,15 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
                 int jDk = jD;
                 for(int k = 0; k < leftover_start; k+=8)
                 {
-                    const __m256 x = _mm256_loadu_ps(X + iiD + k);
-                    const __m256 b1_xj = _mm256_loadu_ps(X + jDk);
-                    const __m256 b2_xj = _mm256_loadu_ps(X + jDk + D);
-                    const __m256 b3_xj = _mm256_loadu_ps(X + jDk + 2*D);
-                    const __m256 b4_xj = _mm256_loadu_ps(X + jDk + 3*D);
-                    const __m256 b5_xj = _mm256_loadu_ps(X + jDk + 4*D);
-                    const __m256 b6_xj = _mm256_loadu_ps(X + jDk + 5*D);
-                    const __m256 b7_xj = _mm256_loadu_ps(X + jDk + 6*D);
-                    const __m256 b8_xj = _mm256_loadu_ps(X + jDk + 7*D);
+                    const __m256 x = _mm256_load_ps(X + iiD + k);
+                    const __m256 b1_xj = _mm256_load_ps(X + jDk);
+                    const __m256 b2_xj = _mm256_load_ps(X + jDk + D);
+                    const __m256 b3_xj = _mm256_load_ps(X + jDk + 2*D);
+                    const __m256 b4_xj = _mm256_load_ps(X + jDk + 3*D);
+                    const __m256 b5_xj = _mm256_load_ps(X + jDk + 4*D);
+                    const __m256 b6_xj = _mm256_load_ps(X + jDk + 5*D);
+                    const __m256 b7_xj = _mm256_load_ps(X + jDk + 6*D);
+                    const __m256 b8_xj = _mm256_load_ps(X + jDk + 7*D);
                     const __m256 b1_d = _mm256_sub_ps(x, b1_xj);
                     const __m256 b2_d = _mm256_sub_ps(x, b2_xj);
                     const __m256 b3_d = _mm256_sub_ps(x, b3_xj);
@@ -261,7 +261,7 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
                 const __m256 sum = _mm256_add_ps (leftover, hsum);
                 const __m256 res = _mm256_mul_ps (factor_avx, sum);
 
-                _mm256_storeu_ps (DD + iiN + j, res);
+                _mm256_store_ps (DD + iiN + j, res);
                 float *res_ptr = (float *)&res;
 
                 DD[jNii] = res_ptr[0];
@@ -287,8 +287,8 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
                 __m256 b1_accum = _mm256_setzero_ps();
                 for(int k = 0; k < leftover_start; k+=8)
                 {
-                    const __m256 x = _mm256_loadu_ps(X + ii*D + k);
-                    const __m256 b1_xj = _mm256_loadu_ps(X + jj*D + k);
+                    const __m256 x = _mm256_load_ps(X + ii*D + k);
+                    const __m256 b1_xj = _mm256_load_ps(X + jj*D + k);
                     const __m256 b1_d = _mm256_sub_ps(x, b1_xj);
                     b1_accum = _mm256_fmadd_ps(b1_d, b1_d, b1_accum);
                 }
@@ -324,7 +324,7 @@ inline void compute_pairwise_affinity_perplexity_opt_eucledian(dt* X, int N, int
     #ifdef COUNTING
     int ITERS = 0;
     #endif
-    dt* mean = (dt*) calloc(D, sizeof(dt));
+    dt* mean = (dt*) _mm_malloc(D* sizeof(dt),32);
     compute_squared_euclidean_distance_normalize_high_dim_optimized(X, N, D, DD, mean);
     free(mean);
 
