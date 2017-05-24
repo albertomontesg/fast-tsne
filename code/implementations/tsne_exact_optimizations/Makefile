@@ -5,7 +5,7 @@ else
 endif
 
 CFLAGS=-O3 -march=native
-SRC=tsne_exact.cpp
+SRC=tsne_exact_op1_highdim.cpp
 BIN_DOUBLE=tsned.o
 BIN_FLOAT=tsnef.o
 
@@ -15,9 +15,9 @@ tsne:
 	$(CC) $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
 
 debug:
-	$(CC) -DDEBUG $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
+	# $(CC) -DDEBUG $(CFLAGS) $(SRC) -o ./$(BIN_DOUBLE)
 	$(CC) -DDEBUG -DSINGLE_PRECISION $(CFLAGS) $(SRC) -o ./$(BIN_FLOAT)
-	./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
+	# ./$(BIN_DOUBLE) ../../../data/mnist/train-images.idx3-ubyte result_d.dat 1000 50 2 1000
 	./$(BIN_FLOAT) ../../../data/mnist/train-images.idx3-ubyte result_f.dat 1000 50 2 1000
 
 asm:

@@ -44,7 +44,7 @@ $CC --version
 
 # Default compiler flags and source files
 COMPILER_FLAGS="-O3 -std=c++11 -march=native"
-SRC="tsne_exact.cpp"
+SRC="tsne_exact_op1_highdim.cpp"
 
 TODAY=$(date +%Y%m%d_%H%M%S)
 
@@ -87,7 +87,7 @@ case $MODE in
                 echo "Compiling"
                 $CC -DCOUNTING -DSINGLE_PRECISION $COMPILER_FLAGS $SRC -o $BIN_COUNT || exit
                 $CC -DBENCHMARK -DSINGLE_PRECISION $COMPILER_FLAGS $SRC -o $BIN_BENCH || exit
-                
+
                 echo "Running..."
                 for N in $(seq $START $INTERVAL $STOP); do
                     printf "$N";
@@ -161,14 +161,14 @@ case $MODE in
                 echo "Compiling(single precision, march=native)"
                 $CC -DCOUNTING -DSINGLE_PRECISION $COMPILER_FLAGS $SRC -o bin/tsne_count_f.o || exit
                 $CC -DBENCHMARK -DSINGLE_PRECISION $COMPILER_FLAGS $SRC -o bin/tsne_bench_f.o || exit
-                
+
                 DIM1=$((INPUT_DIMS/4))
                 DATA_FILE_1=../../../data/${CLUSTER_SIZE}_${DIM1}_$STOP
                 DIM2=$((INPUT_DIMS))
                 DATA_FILE_2=$DATA_FILE # standard size
                 DIM3=$((INPUT_DIMS*4))
                 DATA_FILE_3=../../../data/${CLUSTER_SIZE}_${DIM3}_$STOP
-               
+
                 if [ ! -f $DATA_FILE_1 ]; then
                     echo "Creating data set with $CLUSTER_SIZE clusters, $DIM1 dimensions and $STOP entries"
                     python3 ../../../data/generate_data.py $CLUSTER_SIZE $DIM1 $STOP ../../../data/
