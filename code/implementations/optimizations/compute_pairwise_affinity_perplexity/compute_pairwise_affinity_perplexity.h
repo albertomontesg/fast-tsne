@@ -33,7 +33,7 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 		__m256 beta_vec_pos = _mm256_set1_ps(beta);
 
 		int iter = 0;
-		while (found == 0 && iter < 1) { // iter < 200 
+		while (found == 0 && iter < 20) { // iter < 200 
 			// Compute Gaussian kernel row
 			// Compute entropy of current row
 			float H = 0.0;
@@ -110,8 +110,8 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 		// Row normalize P
 		__m256 sum_P_vec = _mm256_set1_ps(sum_P);
 		int k;
-		for(k = 0; k < N; k+=8){
-			__m256 P_row = _mm256_loadu_ps(P + nN+k);
+		for(k = 0; k+8 < N; k+=8){
+			__m256 P_row = _mm256_load_ps(P + nN+k);
 			__m256 P_row_norm = _mm256_div_ps(P_row,sum_P_vec); // TODO rcp
 			_mm256_store_ps(P+nN+k,P_row_norm);
 		}
@@ -152,7 +152,7 @@ inline void base_version(float* X, int N, int D, float* P,
 		float sum_P;
 
 		int iter = 0;
-		while (found == 0 && iter < 1) {
+		while (found == 0 && iter < 20) {
 			// Compute Gaussian kernel row
 			for (int m = 0; m < N; m++) P[nN + m] = exp_c(-beta * DD[nN + m]);
 			P[nN + n] = MIN_VAL;
