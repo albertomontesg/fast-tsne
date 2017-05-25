@@ -6,15 +6,15 @@
 #include <algorithm>
 #include "../../utils/tsc_x86.h"
 #include "../../utils/random.h"
-#include "gradient_computation_update_normalize.h"
+#include "gradient_computation_update_normalize_2.h"
 
 
 #define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e6
-#define N_START     16
+#define N_START     8
 #define N_STOP      8192
 #define N_INTERVAL  2
-#define EPS         1e-3
+#define EPS         1e-4
 // #define MEDIAN
 
 const int D = 2;
@@ -40,8 +40,9 @@ void register_functions() {
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    add_function(&unfold_d_unfold_nx4_mx8_vec,(char *) "unfold_d_unfold_nx4_mx8_vec");
-    add_function(&unfold_d_unfold_nx8_mx8_vec,(char *) "unfold_d_unfold_nx8_mx8_vec");
+    add_function(&fused,(char *) "fused");
+    add_function(&unfold_accumulators,(char *) "unfold_accumulators");
+    add_function(&unfold_accumulators_avx,(char *) "unfold_accumulators_avx");
 
 }
 
@@ -167,7 +168,7 @@ int main(int argc, char **argv) {
 
 
     // Check the correct output of the functions
-    int N = 512;
+    int N = 525;
     float *Y_o, *Y_c, *Y_r, *P, *Q, *dC_c, *dC_r, *uY_o, *uY_c, *uY_r;
     build(&Y_o, N, D);
     build(&Y_c, N, D);
@@ -199,6 +200,13 @@ int main(int argc, char **argv) {
         build_zeros(&dC_r, N, D);     // Result from any other function
         f(Y_r, P, Q, sum_Q, N, D, dC_r, uY_r, momentum, eta);
 
+        // for (int j = 0; j < N*D; j++) {
+        //     error = fabs(dC_r[j] - dC_c[j]);
+        //     if (error > (EPS * fabs(dC_c[j]))) {
+        //         printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation in dC at position %d with n=%d\nError: %lf != %lf\n", funcNames[i], j, N, dC_r[j], dC_c[j]);
+        //         exit(1);
+        //     }
+        // }
         for (int j = 0; j < N*D; j++) {
             error = fabs(uY_r[j] - uY_c[j]);
             if (error > (EPS * fabs(uY_c[j]))) {

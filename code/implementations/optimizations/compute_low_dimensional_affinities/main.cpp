@@ -5,17 +5,17 @@
 #include <vector>
 #include <algorithm>
 #include "../../utils/tsc_x86.h"
-#include "../../utils/random.h"
-#include "compute_low_dimensional_affinities.h"
+// #include "../../utils/random.h"
+#include "compute_low_dimensional_affinities_2.h"
 
 
-#define NUM_RUNS    11
+#define NUM_RUNS    31
 #define CYCLES_REQUIRED 1e5
 #define N_START     8
 #define N_STOP      8192
 #define N_INTERVAL  2
 #define EPS         1e-3
-// #define MEDIAN
+#define MEDIAN
 
 const int D = 2;
 
@@ -34,19 +34,16 @@ void add_function(comp_func f, char *name);
 * Use add_function(func, description) to add your own functions
 */
 void register_functions() {
-    add_function(&base_version,(char *) "base_version");
+    add_function(&base_version, (char *) "base_version");
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    // add_function(&blocking_4_block_4_unfold_sr_vec, (char *) "blocking_4_block_4_unfold_sr_vec");
-    // add_function(&blocking_8_block_4_unfold_sr_vec, (char *) "blocking_8_block_4_unfold_sr_vec");
-    // add_function(&blocking_16_block_4_unfold_sr_vec, (char *) "blocking_16_block_4_unfold_sr_vec");
-    // add_function(&blocking_32_block_4_unfold_sr_vec, (char *) "blocking_32_block_4_unfold_sr_vec");
-    // add_function(&blocking_32_block_8_unfold_sr_vec, (char *) "blocking_32_block_8_unfold_sr_vec");
-    add_function(&blocking_16_block_8_unfold_sr_vec_2, (char *) "blocking_16_block_8_unfold_sr_vec_2");
-    add_function(&blocking_32_block_8_unfold_sr_vec_2, (char *) "blocking_32_block_8_unfold_sr_vec_2");
-    add_function(&blocking_64_block_8_unfold_sr_vec_2, (char *) "blocking_64_block_8_unfold_sr_vec_2");
-    // add_function(&blocking_64_block_4_unfold_sr_vec, (char *) "blocking_64_block_4_unfold_sr_vec");
+    add_function(&fused, (char *) "fused");
+    add_function(&unfold_sr, (char *) "unfold_sr");
+    add_function(&blocking, (char *) "blocking");
+    add_function(&blocking_avx, (char *) "blocking_avx");
+    add_function(&blocking2_avx, (char *) "blocking2_avx");
+    // add_function(&blocking_32_block_8_unfold_sr_vec_2, (char *) "blocking_32_block_8_unfold_sr_vec_2");
 }
 
 /*
@@ -65,6 +62,12 @@ void add_function(comp_func f, char *name) {
   funcNames[numFuncs] = name;
 
   numFuncs++;
+}
+
+void rand_matrix(float* m, size_t row, size_t col) {
+	for (size_t i = 0; i < row*col; i++) {
+		m[i] = static_cast<float>(rand() + 1) / RAND_MAX;
+	}
 }
 
 void build(float ** d, int row, int col) {
@@ -144,7 +147,7 @@ int main(int argc, char **argv) {
 
 
     // Check the correct output of the functions
-    int N = 512;
+    int N = 527;
     float *X, *DDr, *DDc;
     build(&X, N, D);
     build(&DDc, N, N);
@@ -159,13 +162,16 @@ int main(int argc, char **argv) {
         sum_qr = f(X, N, D, DDr);
         error_sum = fabs(sum_qr - sum_qc);
         if (error_sum > (EPS * fabs(sum_qc))) {
-            printf("Error!! the sum of the Q matrix is different from the correct implementations: %f != %f\n", sum_qr, sum_qc);
+            printf("Error!! the sum of the Q matrix is different from the correct implementations in \"%s\": %f != %f\n", funcNames[i], sum_qr, sum_qc);
         }
 
         for (int j = 0; j < N*N; j++) {
             error = fabs(DDr[j] - DDc[j]);
+            int row = j / N;
+            int col = j - row * N;
             if (error > (EPS * fabs(DDc[j]))) {
-                printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position %d with n=%d\nError: %lf != %lf\n", funcNames[i], j, N, DDr[j], DDc[j]);
+
+                printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position %d = (%d,%d) with n=%d\nError: %lf != %lf\n", funcNames[i], j, row, col, N, DDr[j], DDc[j]);
                 exit(1);
             }
         }
