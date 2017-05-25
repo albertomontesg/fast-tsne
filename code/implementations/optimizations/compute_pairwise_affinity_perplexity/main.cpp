@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 
 
     // Check the correct output of the functions
-    int N = 1024;
+    int N =4096;
     float *P_init, *P_reference, *P;
     float *X_init, *X_reference, *X;
     float *DD_init, *DD_reference, *DD;
@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
     for (int i = 1; i < numFuncs; i++) {
         comp_func f = userFuncs[i];
         std::copy(P_init, P_init + N*N, P);
-        std::copy(X_init, X_init + N*N, X);
+        std::copy(X_init, X_init + N*D, X);
         std::copy(DD_init, DD_init + N*N, DD);
         f(X, N, D, P, perplexity, DD);
         for (int j = 0; j < N*N; j++) {
@@ -184,6 +184,7 @@ int main(int argc, char **argv) {
             }
         }
     }
+
     destroy(P); destroy(P_reference); destroy(P_init);
     destroy(X); destroy(X_reference); destroy(X_init);
     destroy(DD), destroy(DD_reference); destroy(DD_init);
