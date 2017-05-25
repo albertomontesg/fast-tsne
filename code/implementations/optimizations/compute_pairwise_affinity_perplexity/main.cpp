@@ -71,7 +71,7 @@ void destroy(float* d) {
     d = NULL;
 }
 
-double perf_test(comp_func f, int n) {
+double perf_test(comp_func f, int N) {
     double cycles = 0;
     int num_runs = NUM_RUNS;
     int warm_runs = 10;
@@ -79,26 +79,34 @@ double perf_test(comp_func f, int n) {
     double multiplier = 1.0;
 
     // Create the input and output arrays
-    float *P, *P_copy, *DD, *X; 
+    float *P_init, *P;
+    float *X_init, *X;
+    float *DD_init, *DD;
+
     // Input:
-    build(&X, n, D);
-    DD= (float*)aligned_alloc(32, n*n*sizeof(float));
-    memset(DD, 0, sizeof(float) * n*n);
-    P = (float*)aligned_alloc(32, n*n*sizeof(float));
-    build(&P, n, n);
-    P_copy = (float*)aligned_alloc(32, n*n*sizeof(float));
-    std::copy(P, P+n*n, P_copy);
+    build(&P_init, N,N);
+    P = (float*)aligned_alloc(32, N*N*sizeof(float));
+    std::copy(P_init, P_init+ N*N, P);
+    
+    build(&X_init, N, D);
+    X = (float*)aligned_alloc(32, N*D*sizeof(float));
+    std::copy(X_init, X_init+ N*D, X);
+
+    build(&DD_init, N, N);
+    DD = (float*)aligned_alloc(32, N*N*sizeof(float));
+    std::copy(DD_init, DD_init+ N*N, DD);
+
     // Warm up the cache
     do {
-        std::copy(P_copy, P_copy +n*n, P);
+        std::copy(P_init, P_init + N*N, P);
+        std::copy(X_init, X_init + N*N, X);
+        std::copy(DD_init, DD_init + N*N, DD);
         warm_runs = warm_runs * multiplier;
         start = start_tsc();
         for (size_t i = 0; i < num_runs; i++) {
-            f(X, n, D, P, perplexity, DD);
+            f(X, N, D, P, perplexity, DD);
         }
         end = stop_tsc(start);
-        memset(DD, 0, sizeof(float) * n*n);
-        memset(P, 0, sizeof(float) * n*n);
         cycles = (double) end;
         multiplier = (CYCLES_REQUIRED) / (cycles);
 
@@ -107,20 +115,18 @@ double perf_test(comp_func f, int n) {
 
     for (size_t i = 0; i < num_runs; ++i) {
         // Put here the function
-        std::copy(P_copy, P_copy +n*n, P);
+        std::copy(P_init, P_init + N*N, P);
+        std::copy(X_init, X_init + N*N, X);
+        std::copy(DD_init, DD_init + N*N, DD);
         start = start_tsc();
-        f(X, n, D, P, perplexity, DD);
+        f(X, N, D, P, perplexity, DD);
         end = stop_tsc(start);
-        memset(DD, 0, sizeof(float) * n*n);
-        memset(P, 0, sizeof(float) * n*n);
         num_cycles[i] = (double) end;
     }
-    destroy(P);
-    destroy(P_copy);
-    destroy(DD);
-    destroy(X);
-    // Why does this cause a double free error??
-    
+    destroy(P); destroy(P_init);
+    destroy(X); destroy(X_init);
+    destroy(DD); destroy(DD_init);
+
     std::sort(num_cycles.begin(), num_cycles.end());
     int pos = num_runs / 2 + 1;
 
@@ -134,7 +140,7 @@ int main(int argc, char **argv) {
 
 
     // Check the correct output of the functions
-    int N = 8;
+    int N = 1024;
     float *P_init, *P_reference, *P;
     float *X_init, *X_reference, *X;
     float *DD_init, *DD_reference, *DD;
@@ -170,7 +176,7 @@ int main(int argc, char **argv) {
         f(X, N, D, P, perplexity, DD);
         for (int j = 0; j < N*N; j++) {
             error = fabs(P_reference[j] - P[j]);
-            if (error > 20*EPS) {
+            if (error > EPS) {
                 printf("\n");
                 printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation at position (%d, %d) with n=%d\nError: %lf != %lf\n", funcNames[i], j/N ,j%N, N, P_reference[j], P[j]);
                 printf("\n");
@@ -181,21 +187,21 @@ int main(int argc, char **argv) {
     destroy(P); destroy(P_reference); destroy(P_init);
     destroy(X); destroy(X_reference); destroy(X_init);
     destroy(DD), destroy(DD_reference); destroy(DD_init);
-    /*
-    double cycles;
-    printf("N");
-    for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
-    printf("\n");
-    for (int n = n_start; n <= n_stop; n *= n_interval) {
-        printf("%d", n);
 
-        for (int i = 0; i < numFuncs; i++) {
-            cycles = perf_test(userFuncs[i], n);
-            printf(",%lf", cycles);
-        }
-        printf("\n");
-    }
-    */
+//       double cycles;
+//       printf("N");
+//       for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
+//       printf("\n");
+//       for (int n = n_start; n <= n_stop; n *= n_interval) {
+//           printf("%d", n);
+//    
+//           for (int i = 0; i < numFuncs; i++) {
+//               cycles = perf_test(userFuncs[i], n);
+//               printf(",%lf", cycles);
+//           }
+//           printf("\n");
+//       }
+    
     
     return 0;
 }
