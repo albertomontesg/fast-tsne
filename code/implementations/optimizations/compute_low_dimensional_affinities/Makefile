@@ -1,5 +1,5 @@
-CC=g++-4.9
-CFLAGS=-O3 -march=native -mavx -std=c++11
+CC=g++
+CFLAGS=-O3 -march=native -mavx -mfma -std=c++11 -lstdc++
 SRC=main.cpp
 BIN=run.o
 OUT_FILE?=/dev/stdout;
@@ -11,7 +11,7 @@ compile:
 	$(CC) $(CFLAGS) $(SRC) -o ./$(BIN)
 
 benchmark:
-	$(CC) $(CFLAGS) $(BENCH_MEDIAN) $(SRC) -o ./$(BIN)
+	$(CC) $(CFLAGS) $(SRC) -o ./$(BIN)
 	./$(BIN) > $(OUT_FILE)
 
 asm:
