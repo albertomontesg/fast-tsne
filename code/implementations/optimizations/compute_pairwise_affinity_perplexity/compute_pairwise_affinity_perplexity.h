@@ -31,10 +31,10 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 
 
 		__m256 beta_vec_neg = _mm256_set1_ps(-1*beta);
-		__m256 ones_neg = _mm256_set1_ps(-1);
+		__m256 beta_vec_pos = _mm256_set1_ps(beta);
 
 		int iter = 0;
-		while (found == 0 && iter < 200) {
+		while (found == 0 && iter < 5) {
 			// Compute Gaussian kernel row
 			// Compute entropy of current row
 			float H = 0.0;
@@ -46,34 +46,42 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 				__m256 DD_row = _mm256_loadu_ps(DD+nN+m);
 				__m256 DD_row_beta = _mm256_mul_ps(beta_vec_neg,DD_row);
 				__m256 DD_row_beta_exp = _mm256_exp_ps(DD_row_beta); //returns an error in my case as it cannot find it
+				__m256 DD_row_beta_pos = _mm256_mul_ps(beta_vec_pos,DD_row);
 				_mm256_store_ps(P+nN+m,DD_row_beta_exp);
 
 				if((n >= m) & (n <= m + 8)){
 					P[nN + n] = MIN_VAL;
 				}
-				__m256 s = _mm256_hadd_ps(DD_row_beta,DD_row_beta);
+
+				__m256 P_row_update = _mm256_load_ps(P+nN+m);
+				__m256 s = _mm256_hadd_ps(P_row_update,P_row_update);
 				sum_P += s[0] + s[1] + s[4] + s[5];
 
-				__m256 P_row_update = _mm256_loadu_ps(P+nN+m);
-
-				__m256 DD_row_beta_P = _mm256_mul_ps(P_row_update,DD_row_beta);
-				DD_row_beta_P = _mm256_mul_ps(DD_row_beta_P,ones_neg);
+				__m256 DD_row_beta_P = _mm256_mul_ps(DD_row_beta_pos,P_row_update);
+				//DD_row_beta_P = _mm256_mul_ps(DD_row_beta_P,ones_neg);
 
 				__m256 s1 = _mm256_hadd_ps(DD_row_beta_P,DD_row_beta_P);
 				H += s1[0] + s1[1] + s1[4] + s1[5];
 			}
 
+
 			//if N is not multiplicative factor of 8 do the rest sequentially
 			for (int i = m; i < N; ++i)
 			{
 				P[nN + i] = exp_c(-beta * DD[nN + i]);
+				P[nN + n] = MIN_VAL;
 				sum_P += P[nN + i];
 				H += beta * (DD[nN + i] * P[nN + i]);
 			}
 
-
-			H = (H / sum_P) + log_c(sum_P);
-
+		    printf("blocking: \n");
+		    printf("H: %f \n", H);
+            for(int i=0; i<N; i++){
+                printf("P[%d][%d]= %f \n", n, i, P[n*N+i]);
+            }
+            float t1 = log_c(sum_P);
+            float t2 = (H / sum_P);
+			H = t1 + t2;
 			// Evaluate whether the entropy is within the tolerance level
 			float Hdiff = H - log_c(perplexity);
 			if(Hdiff < tol && -Hdiff < tol) {
@@ -107,14 +115,15 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 		int k;
 		for(k = 0; k < N; k+=8){
 			__m256 P_row = _mm256_loadu_ps(P + nN+k);
-			__m256 P_row_norm = _mm256_div_ps(P_row,sum_P_vec);
+			__m256 P_row_norm = _mm256_div_ps(P_row,sum_P_vec); // TODO rcp
 			_mm256_store_ps(P+nN+k,P_row_norm);
 		}
 
 		//if N is not multiplicative factor of 8 do the rest sequentially
+		float sum_P_inv = 1.0/sum_P; // TODO rcp
 		for (int i = k; i < N; ++i)
 		{
-			P[nN + i] /= sum_P;
+			P[nN + i] *= sum_P_inv;
 		}
 
 		nN += N;
@@ -146,7 +155,7 @@ inline void base_version(float* X, int N, int D, float* P,
 		float sum_P;
 
 		int iter = 0;
-		while (found == 0 && iter < 200) {
+		while (found == 0 && iter < 5) {
 			// Compute Gaussian kernel row
 			for (int m = 0; m < N; m++) P[nN + m] = exp_c(-beta * DD[nN + m]);
 			P[nN + n] = MIN_VAL;
@@ -155,7 +164,13 @@ inline void base_version(float* X, int N, int D, float* P,
 			sum_P = MIN_VAL;
 			for (int m = 0; m < N; m++) sum_P += P[nN + m];
 			float H = 0.0;
-			for(int m = 0; m < N; m++) H += beta * (DD[nN + m] * P[nN + m]);
+			for(int m = 0; m < N; m++) H += beta * DD[nN + m] * P[nN + m];
+
+		    printf("reference: \n");
+		    printf("H: %f \n", H);
+            for(int i=0; i<N; i++){
+                printf("P[%d][%d]= %f \n", n, i, P[n*N+i]);
+            }
 			H = (H / sum_P) + log_c(sum_P);
 
 			// Evaluate whether the entropy is within the tolerance level
