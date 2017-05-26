@@ -15,11 +15,11 @@
 #define CYCLES_REQUIRED 1e5
 #define N_START     8
 // #define N_STOP      8192
-#define N_STOP      5000
+#define N_STOP      129
 #define N_INTERVAL  2
 #define D_START     8
 // #define D_STOP      8192
-#define D_STOP      5000
+#define D_STOP      129
 #define D_INTERVAL  2
 #define EPS         1e-4
 
@@ -39,15 +39,16 @@ void add_function(comp_func f, char *name);
 */
 void register_functions() {
     add_function(&base_version, "base_version");
-    add_function(&fast_scalar, "fast_scalar");
+    // add_function(&fast_scalar, "fast_scalar");
 
-    add_function(&fast_scalar_8x8_base, "fast_scalar_8x8_base");
-    add_function(&fast_scalar_avx, "fast_scalar_avx");
-    add_function(&fast_scalar_avx_start_matter, "fast_scalar_avx_start_matter");
+    // add_function(&fast_scalar_8x8_base, "fast_scalar_8x8_base");
+    // add_function(&fast_scalar_avx, "fast_scalar_avx");
+    // add_function(&fast_scalar_avx_start_matter, "fast_scalar_avx_start_matter");
 
-    add_function(&fast_scalar_8x8x8_big_unroll, "fast_scalar_8x8x8_big_unroll");
-    add_function(&fast_scalar_8x8x8_avx, "fast_scalar_8x8x8_avx");
-    add_function(&fast_scalar_8x8x8_avx_with_start, "fast_scalar_8x8x8_avx_with_start");
+    // add_function(&fast_scalar_8x8x8_big_unroll, "fast_scalar_8x8x8_big_unroll");
+    // add_function(&fast_scalar_8x8x8_avx, "fast_scalar_8x8x8_avx");
+    // add_function(&fast_scalar_8x8x8_avx_with_start, "fast_scalar_8x8x8_avx_with_start");
+    add_function(&fast_scalar_8x8x8_avx_with_start_more_block, "fast_scalar_8x8x8_avx_with_start_more_block");
 
 
     //not faster than normal fast_scaler
