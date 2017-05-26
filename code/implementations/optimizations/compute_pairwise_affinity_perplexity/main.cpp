@@ -99,7 +99,7 @@ double perf_test(comp_func f, int N) {
     // Warm up the cache
     do {
         std::copy(P_init, P_init + N*N, P);
-        std::copy(X_init, X_init + N*N, X);
+        std::copy(X_init, X_init + N*D, X);
         std::copy(DD_init, DD_init + N*N, DD);
         warm_runs = warm_runs * multiplier;
         start = start_tsc();
@@ -116,7 +116,7 @@ double perf_test(comp_func f, int N) {
     for (size_t i = 0; i < num_runs; ++i) {
         // Put here the function
         std::copy(P_init, P_init + N*N, P);
-        std::copy(X_init, X_init + N*N, X);
+        std::copy(X_init, X_init + N*D, X);
         std::copy(DD_init, DD_init + N*N, DD);
         start = start_tsc();
         f(X, N, D, P, perplexity, DD);
@@ -189,19 +189,19 @@ int main(int argc, char **argv) {
     destroy(X); destroy(X_reference); destroy(X_init);
     destroy(DD), destroy(DD_reference); destroy(DD_init);
 
-//       double cycles;
-//       printf("N");
-//       for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
-//       printf("\n");
-//       for (int n = n_start; n <= n_stop; n *= n_interval) {
-//           printf("%d", n);
-//
-//           for (int i = 0; i < numFuncs; i++) {
-//               cycles = perf_test(userFuncs[i], n);
-//               printf(",%lf", cycles);
-//           }
-//           printf("\n");
-//       }
+    double cycles;
+    printf("N");
+    for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
+    printf("\n");
+    for (int n = n_start; n <= n_stop; n *= n_interval) {
+        printf("%d", n);
+
+        for (int i = 0; i < numFuncs; i++) {
+            cycles = perf_test(userFuncs[i], n);
+            printf(",%lf", cycles);
+        }
+        printf("\n");
+    }
 
 
     return 0;
