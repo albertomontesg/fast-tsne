@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
 
 
     // Check the correct output of the functions
-    int N =4096;
+    int N = 512;
     float *P_init, *P_reference, *P;
     float *X_init, *X_reference, *X;
     float *DD_init, *DD_reference, *DD;
