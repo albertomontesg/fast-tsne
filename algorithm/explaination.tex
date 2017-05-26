@@ -1,14 +1,17 @@
 \documentclass{article}
-
+\usepackage{geometry}
 \usepackage[]{algorithm2e}
 \usepackage{amsmath,amssymb}
 
+\geometry{a4paper, top=2cm, left=1.5cm, right=1.5cm, bottom=2cm}
 \begin{document}
 
 \begin{algorithm}[H]
- \KwData{high dimensional data $\mathbf{X} = \{\mathbf{X}_1, \dots, \mathbf{X}_N \} \subseteq \mathbb{R}^D$, Target Perplexity $P$, Number of iterations $T$}
- \KwResult{low dimensional data $\mathbf{Y} = \{\mathbf{Y}_1, \dots, \mathbf{Y}_N \} \subseteq \mathbb{R}^d$ such that $d \ll D$ (usually d = 2 or 3)}
-	compute squared eucledian distances $d_{ij} = \| \mathbf{X}_i - \mathbf{X}_j \|^2$ \;
+ \KwData{high dimensional data $\mathbf{X} = \{\mathbf{x}_1, \dots, \mathbf{x}_N \} \subseteq \mathbb{R}^D$, Target Perplexity $P$, Number of iterations $T$}
+ \KwResult{low dimensional data $\mathbf{Y} = \{\mathbf{y}_1, \dots, \mathbf{y}_N \} \subseteq \mathbb{R}^d$ such that $d \ll D$ (usually d = 2 or 3)}
+ 	subtract mean $\forall i = 0..N \quad \mathbf{x}_i = \mathbf{x}_i - \bar{\mathbf{x}}$\;
+ 	recale data $\forall i = 0..N, \, k = 0..D \quad \left(\mathbf{x}_i\right)_k = \left(\mathbf{x}_i\right)_k / \max_{i', k'} \left(\mathbf{x}_{i'}\right)_{k'}$\;
+	compute squared eucledian distances $d_{ij} = \| \mathbf{x}_i - \mathbf{x}_j \|^2$ \;
 	\For{$i = 0 .. N$}{
 		initialize $\sigma_i$\;
 		\Repeat{$\text{per}_i = P$}{
@@ -17,11 +20,12 @@
 		}
 	}
 	symmetrize $p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}$\;
-	sample inital $\mathbf{Y}$ from gaussian distribution\;
-	\For{$t = 0 .. T$}{
-		compute $q_{ij} = \frac{ (1 + \| y_i - y_j \|^2)^{-1} }{ \sum_{k \neq l} (1 + \| y_k - y_l \|^2)^{-1} }$\;
-		compute $\frac{\partial C}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) (y_i - y_j) (1 + \| y_i - y_j \|^2)^{-1}$\;
-		update $\mathbf{Y}^{(t)} = \mathbf{Y}^{(t-1)} + \eta \frac{\partial C}{\partial mathbf{Y}} + \alpha(t) (\mathbf{Y}^{(t-1)} - \mathbf{Y}^{(t-2)}) $ \;
+	sample inital $\mathbf{Y}^{(0)} = \{\mathbf{y}_1^{(0)}, \dots, \mathbf{y}_N^{(0)} \}$ from gaussian distribution\;
+	\For{$t = 1 .. T$}{
+		compute $\forall i,j = 0..N \quad q_{ij} = \frac{ (1 + \| \mathbf{y}_i^{(t-1)} - \mathbf{y}_j^{(t-1)} \|^2)^{-1} }{ \sum_{k \neq l} (1 + \| \mathbf{y}_k^{(t-1)} - \mathbf{y}_l^{(t-1)} \|^2)^{-1} }$\;
+		compute $\forall i = 0..N \quad  \frac{\partial C}{\partial \mathbf{y}_i^{(t-1)}} = 4 \sum_j (p_{ij} - q_{ij}) (\mathbf{y}_i^{(t-1)} - \mathbf{y}_j^{(t-1)}) (1 + \| \mathbf{y}_i^{(t-1)} - \mathbf{y}_j^{(t-1)} \|^2)^{-1}$\;
+		update $\forall i = 0..N \quad  \mathbf{y}_i^{(t)} = \mathbf{y}_i^{(t-1)} + \eta \frac{\partial C}{\partial \mathbf{y}_i^{(t-1)}} + \alpha(t) (\mathbf{y}_i^{(t-1)} - \mathbf{y}_i^{(t-2)}) $ \;
+		subtract mean $\forall i = 0..N \quad \mathbf{y}_i^{(t-1)} = \mathbf{y}_i^{(t-1)} - \bar{\mathbf{y}}^{(t-1)}$\;
 	}
 
  \caption{t-SNE Algorithm}
