@@ -32,17 +32,17 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 		__m256 beta_vec_neg = _mm256_set1_ps(-1*beta);
 		__m256 beta_vec_pos = _mm256_set1_ps(beta);
 
-	    printf("blocking: \n");
+//	    printf("blocking: \n");
 		int iter = 0;
 		while (found == 0 && iter < 200) { // iter < 200 
-            printf("iter %d \n", iter);
+//            printf("iter %d \n", iter);
 			// Compute Gaussian kernel row
 			// Compute entropy of current row
 			float H = 0.0;
 			sum_P = MIN_VAL; // = 0
 
 			int m;
-            printf("-beta: %.30f \n", beta_vec_neg[0]);
+//            printf("-beta: %.30f \n", beta_vec_neg[0]);
 			for (m = 0; m + 8 <= N; m+=8){
 				__m256 DD_row = _mm256_load_ps(DD+nN+m);
 				__m256 DD_row_beta = _mm256_mul_ps(beta_vec_neg,DD_row);
@@ -59,11 +59,24 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 				}
 				
 				__m256 P_row = _mm256_load_ps(P+nN+m);
-				__m256 s = _mm256_hadd_ps(P_row,P_row);
+
+                // First calculate this before summing up P
+                __m256 DD_row_beta_P = _mm256_mul_ps(beta_vec_pos,DD_row);
+				DD_row_beta_P = _mm256_mul_ps(DD_row_beta_P,P_row);
+
+                // summing up P
+ 				__m256 s = _mm256_hadd_ps(P_row,P_row);
 				sum_P += s[0] + s[1] + s[4] + s[5];
 
-				__m256 DD_row_beta_P = _mm256_mul_ps(beta_vec_pos,P_row);
-				DD_row_beta_P = _mm256_mul_ps(DD_row_beta_P,P_row);
+//                for(int i=0; i<8; i++){
+//                    printf("row[%d] P[%d]: %.30f \n", n, m+i, P_row[i]);
+//                }
+//                for(int i=0; i<8; i++){
+//                    printf("row[%d] DD[%d]: %.30f \n", n, m+i, DD_row[i]);
+//                }
+//                for(int i=0; i<8; i++){
+//                    printf("row[%d] H[%d]: %.30f \n", n, m+i, DD_row_beta_P[i]);
+//                }
 
 				__m256 s1 = _mm256_hadd_ps(DD_row_beta_P,DD_row_beta_P);
 				H += s1[0] + s1[1] + s1[4] + s1[5];
@@ -84,7 +97,7 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 //           printf("sum_P: %.30f \n", sum_P);
 //           printf("H part 1: %.30f \t part 2: %.30f \n", (H / sum_P), log_c(sum_P));
 			H = t1 + t2;
-            printf("H after: %.30f \n", H);
+//            printf("H after: %.30f \n", H);
 			// Evaluate whether the entropy is within the tolerance level
 			float Hdiff = H - log_c(perplexity);
 			if(Hdiff < tol && -Hdiff < tol) {
@@ -113,7 +126,7 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 //	        for(int i=0; i<N; i++){
 //	            printf("P[%d][%d]= %.30f \n", n, i, P[n*N+i]);
 //	        }
-            printf("=======\n");
+//            printf("=======\n");
 			// Update iteration counter
 			iter++;
 		}
@@ -167,10 +180,10 @@ inline void base_version(float* X, int N, int D, float* P,
 
 		int iter = 0;
         
-	    printf("reference: \n");
+//	    printf("reference: \n");
 		while (found == 0 && iter < 200) {
-            printf("iter %d \n", iter);
-            printf("-beta: %.30f \n", -beta);
+//            printf("iter %d \n", iter);
+//            printf("-beta: %.30f \n", -beta);
 			// Compute Gaussian kernel row
 			for (int m = 0; m < N; m++) P[nN + m] = exp_c(-beta * DD[nN + m]);
 			P[nN + n] = MIN_VAL;
@@ -184,12 +197,22 @@ inline void base_version(float* X, int N, int D, float* P,
 			for (int m = 0; m < N; m++) sum_P += P[nN + m];
 			float H = 0.0;
 			for(int m = 0; m < N; m++) H += beta * DD[nN + m] * P[nN + m];
-
+//            for(int i=0; i<N; i++){
+//                    printf("row[%d] P[%d]: %.30f \n", n, i, P[nN + i]);
+//            }
+//            for(int i=0; i<N; i++){
+//                    printf("row[%d] DD[%d]: %.30f \n", n, i, DD[nN + i]);
+//            }
+//
+//            for(int i=0; i<N; i++){
+//                    printf("row[%d] H[%d]: %.30f \n", n, i, beta * DD[nN+i] * P[nN+i]);
+//            }
+//
 //            printf("H before: %.30f \n", H);
 //            printf("sum_P: %.30f \n", sum_P);
 //            printf("H part 1: %.30f \t part 2: %.30f \n", (H/sum_P), log_c(sum_P));
 			H = (H / sum_P) + log_c(sum_P);
-            printf("H after: %.30f \n", H);
+//            printf("H after: %.30f \n", H);
 
 			// Evaluate whether the entropy is within the tolerance level
 			float Hdiff = H - log_c(perplexity);
@@ -216,7 +239,7 @@ inline void base_version(float* X, int N, int D, float* P,
 //        for(int i=0; i<N; i++){
 //            printf("P[%d][%d]= %.30f \n", n, i, P[n*N+i]);
 //        }
-            printf("=======\n");
+//            printf("=======\n");
 			// Update iteration counter
 			iter++;
 		}
