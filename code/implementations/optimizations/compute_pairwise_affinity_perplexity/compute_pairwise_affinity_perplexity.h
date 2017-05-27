@@ -18,32 +18,36 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 	#endif
 
 	compute_squared_euclidean_distance(X, N, D, DD);
-
 	// Compute the Gaussian kernel row by row
 	int nN = 0;
 	for (int n = 0; n < N; n++) {
 		int found = 0;
-		float beta = 1.0;
-        float min_beta = -MAX_VAL;
-        float max_beta =  MAX_VAL;
 		float tol = 1e-5;
 		float sum_P;
 
 		__m256 beta_vec = _mm256_set1_ps(1.0); // beta (init)
         __m256 beta_min_vec = _mm256_set1_ps(-MAX_VAL);
         __m256 beta_max_vec = _mm256_set1_ps(MAX_VAL);
+        __m256 n_vec = _mm256_set1_ps(n);
         __m256 half = _mm256_set1_ps(0.5);
         __m256 two = _mm256_set1_ps(2);
         __m256 minus = _mm256_set1_ps(-1);
+        __m256 eight = _mm256_set1_ps(8);
 
 		int iter = 0;
-		while (found == 0 && iter < 200) { // iter < 200
+        int maxIter = 3; // 200
+		while (found == 0 && iter < maxIter) { // iter < 200
 			// Compute Gaussian kernel row
 			// Compute entropy of current row
 			float H = 0.0;
 			sum_P = MIN_VAL; // = 0
 
-			int m;
+            __m256 sum_P_accum = _mm256_setzero_ps();
+            __m256 H_accum = _mm256_setzero_ps();
+            __m256 m_vec = _mm256_set_ps(7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0);
+            int m;
+
+            // first part until diagonal
 			for (m = 0; m + 8 <= N; m+=8){
                 // DD[m:m+7]
 				__m256 DD_row = _mm256_load_ps(DD+nN+m);
@@ -51,43 +55,60 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
                 __m256 DD_row_beta = _mm256_mul_ps(beta_vec, minus);
                 // -beta * DD[m:m+7]
                 DD_row_beta = _mm256_mul_ps(DD_row_beta, DD_row);
-				// exp(-beta * DD[m:m+7]
-                __m256 DD_row_beta_exp = _mm256_exp_ps(DD_row_beta);
-				_mm256_store_ps(P+nN+m,DD_row_beta_exp); // TODO: avoid storing back
+				// P_vec = P[m:m+7] = exp(-beta * DD[m:m+7]
+                __m256 P_vec = _mm256_exp_ps(DD_row_beta);
+                // n==m, set P to zero
+                // create mask. 0xFFFFFF if inequal, otherwise 0x000000
+                __m256 mask = _mm256_cmp_ps(m_vec, n_vec, 4);
+                __m256 min_val_vec = _mm256_set1_ps(MIN_VAL);
+                mask = _mm256_add_ps(mask, min_val_vec);// set to min_val not to 0
 
-				if((n >= m) || (n < m + 8)){ // diagonal case
-					P[nN + n] = MIN_VAL; // = 0
-				}
+                P_vec = _mm256_and_ps(P_vec, mask);
+                // add P to sum_P accumulator
+                sum_P_accum = _mm256_add_ps(sum_P_accum, P_vec);
+                // H_now = beta * DD * P
+                __m256 H_now = _mm256_mul_ps(beta_vec,DD_row);
+				H_now = _mm256_mul_ps(H_now,P_vec);
+                 // H += H_now
+                H_accum = _mm256_add_ps(H_accum, H_now);
 
-				__m256 P_row = _mm256_load_ps(P+nN+m);
-
-                // First calculate this before summing up P
-                __m256 DD_row_beta_P = _mm256_mul_ps(beta_vec,DD_row);
-				DD_row_beta_P = _mm256_mul_ps(DD_row_beta_P,P_row);
-
-                // summing up P
-				__m256 s = _mm256_hadd_ps(P_row,P_row);
-				sum_P += s[0] + s[1] + s[4] + s[5];
-
-				__m256 s1 = _mm256_hadd_ps(DD_row_beta_P,DD_row_beta_P);
-				H += s1[0] + s1[1] + s1[4] + s1[5];
+                // m+=8
+                m_vec = _mm256_add_ps(m_vec, eight);
 			}
-
 
 			//if N is not multiplicative factor of 8 do the rest sequentially
+            float beta = beta_vec[0];
 			for (int i = m; i < N; ++i){
-				P[nN + i] = exp_c(-beta * DD[nN + i]);
-				P[nN + n] = MIN_VAL;
-				sum_P += P[nN + i];
-				H += beta * (DD[nN + i] * P[nN + i]);
+				float Pni = exp_c(-beta * DD[nN + i]);
+				if(i==n) Pni = MIN_VAL;
+				sum_P += Pni;
+				H += beta * (DD[nN + i] * Pni);
 			}
 
-            float t1 = log_c(sum_P);
-            float t2 = (H / sum_P);
-			H = t1 + t2;
-			// Evaluate whether the entropy is within the tolerance level
+            // H += Hs[m:m+7]
+            H_accum = _mm256_hadd_ps(H_accum,H_accum);
+            H += H_accum[0] + H_accum[1] + H_accum[4] + H_accum[5];
+
+            // sum_P += P[m:m+7]
+			sum_P_accum = _mm256_hadd_ps(sum_P_accum,sum_P_accum);
+			sum_P += sum_P_accum[0] + sum_P_accum[1] + sum_P_accum[4] + sum_P_accum[5];
+
+//            printf("H before %.10e \n", H);
+//            printf("sum_P %.10e \n", sum_P);
+
+            // revert diagonal term added
+            //printf("diagonal values\n P[nN+n]= %.30f \t H_now = %.30f \n", P[nN+n], (beta*DD[nN+n]*P[nN+n]));
+//            float Pdiag = exp_c(-beta * DD[nN + n]);
+//            printf("sum_P before substracting: %.30f \n", sum_P);
+//            sum_P -= Pdiag;
+//            H -= beta * DD[nN + n] * Pdiag;
+
+			H = (H / sum_P) + log_c(sum_P);
+
+//            printf("H after %.10e \n", H);
+            // Evaluate whether the entropy is within the tolerance level
 			float Hdiff = H - log_c(perplexity);
-			if(Hdiff < tol && -Hdiff < tol) {
+			if((iter+1 == maxIter) || (Hdiff < tol && -Hdiff < tol)) {
 				found = 1;
 			}
 			else {
@@ -114,26 +135,51 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
 
 			// Update iteration counter
 			iter++;
+//            printf("beta: %f \n", beta_vec[0]);
+//            printf("iter %d, row %d \t H = %.30f \n", iter,n, H);
+//            printf("sum_P: %.30f \n", sum_P);
+//            printf("===\n");
+
 		}
 		#ifdef COUNTING
 		ITERS += iter;
 		#endif
 
+        // based on beta write values
+        float beta = beta_vec[0];
+        for(int i=0; i<N; i++){
+            P[nN+i] = exp_c(-1 * beta * DD[nN + i]);
+            if(n==i) P[nN+i] = MIN_VAL;
+        }
+//        printf("sum_P before normalize: %.5e \n", sum_P);
+//        for(int i=0; i<N; i++){
+//            printf("P[%d][%d] before normalize: %.5e \n", n, i, P[nN+i]);
+//        }
+
+
 		// Row normalize P
-		__m256 sum_P_vec = _mm256_set1_ps(sum_P);
+		__m256 sum_P_inv_vec = _mm256_set1_ps(1.0/sum_P);
 		int k;
 		for(k = 0; k+8 <= N; k+=8){
 			__m256 P_row = _mm256_load_ps(P + nN+k);
-			__m256 P_row_norm = _mm256_div_ps(P_row,sum_P_vec); // TODO rcp
+//            printf("1st and 2nd vals P: %.5e %.5e \n", P_row[0], P_row[1]);
+//            printf("1st and 2nd vals 1/sum_p: %.5e %.5e \n", sum_P_inv_vec[0], sum_P_inv_vec[1]);
+			__m256 P_row_norm = _mm256_mul_ps(P_row,sum_P_inv_vec);
+//            printf("1st and 2nd vals: %.5e %.5e \n", P_row_norm[0], P_row_norm[1]);
+//            exit(1);
 			_mm256_store_ps(P+nN+k,P_row_norm);
 		}
 
 		//if N is not multiplicative factor of 8 do the rest sequentially
-		float sum_P_inv = 1.0/sum_P; // TODO rcp
+		float sum_P_inv = 1.0/sum_P;
 		for (int i = k; i < N; ++i)
 		{
 			P[nN + i] *= sum_P_inv;
 		}
+
+//        for(int i=0; i<N; i++){
+//            printf("P[%d][%d] after normalize: %.5e \n", n, i, P[nN+i]);
+//        }
 
 		nN += N;
 	}
@@ -165,13 +211,14 @@ inline void base_version(float* X, int N, int D, float* P,
 
 		int iter = 0;
 
-//	    printf("reference: \n");
-		while (found == 0 && iter < 200) {
+        int maxIter = 3; // 200
+		while (found == 0 && iter < maxIter) {
 //            printf("iter %d \n", iter);
 //            printf("-beta: %.30f \n", -beta);
 			// Compute Gaussian kernel row
 			for (int m = 0; m < N; m++) P[nN + m] = exp_c(-beta * DD[nN + m]);
-			P[nN + n] = MIN_VAL;
+			float Pdiag = P[nN+n];
+            P[nN + n] = MIN_VAL;
 
 //            for(int i=0; i<N; i++){
 //                printf("(%d,%d) DD: %.30f \n", n, i, DD[nN+i]);
@@ -182,6 +229,11 @@ inline void base_version(float* X, int N, int D, float* P,
 			for (int m = 0; m < N; m++) sum_P += P[nN + m];
 			float H = 0.0;
 			for(int m = 0; m < N; m++) H += beta * DD[nN + m] * P[nN + m];
+
+
+//            printf("iter %d, row %d \t H = %.30f \n", iter,n, H);
+//            printf("P[nN+n]: %.30f \t sum_P: %.30f \n", Pdiag, sum_P);
+//            printf("===\n");
 //            for(int i=0; i<N; i++){
 //                    printf("row[%d] P[%d]: %.30f \n", n, i, P[nN + i]);
 //            }
@@ -196,7 +248,12 @@ inline void base_version(float* X, int N, int D, float* P,
 //            printf("H before: %.30f \n", H);
 //            printf("sum_P: %.30f \n", sum_P);
 //            printf("H part 1: %.30f \t part 2: %.30f \n", (H/sum_P), log_c(sum_P));
+
+//            printf("H before %.10e \n", H);
+//            printf("sum_P %.10e \n", sum_P);
 			H = (H / sum_P) + log_c(sum_P);
+
+//            printf("H after %.10e \n", H);
 //            printf("H after: %.30f \n", H);
 
 			// Evaluate whether the entropy is within the tolerance level
@@ -220,21 +277,36 @@ inline void base_version(float* X, int N, int D, float* P,
 						beta = (beta + min_beta) / 2.0;
 				}
 			}
-//        printf("H: %.30f \n", H);
+//        printf("beta: %.30f \n", beta);
 //        for(int i=0; i<N; i++){
 //            printf("P[%d][%d]= %.30f \n", n, i, P[n*N+i]);
 //        }
-//            printf("=======\n");
+//        printf("=======\n");
 			// Update iteration counter
 			iter++;
-		}
+//            printf("beta: %f \n", beta);
+//            printf("iter %d, row %d \t H = %.30f \n", iter,n, H);
+//            printf("sum_P: %.30f \n", sum_P);
+//            printf("===\n");
 
+		}
 		#ifdef COUNTING
 		ITERS += iter;
 		#endif
 
+//        printf("sum_P before normalize: %.5e \n", sum_P);
+//        for(int i=0; i<N; i++){
+//            printf("P[%d][%d] before normalize: %.5e \n", n, i, P[nN+i]);
+//        }
+
 		// Row normalize P
 		for(int m = 0; m < N; m++) P[nN + m] /= sum_P;
+
+//        for(int i=0; i<N; i++){
+//            printf("P[%d][%d] after normalize: %.5e \n", n, i, P[nN+i]);
+//        }
+
+
 		nN += N;
 	}
 
