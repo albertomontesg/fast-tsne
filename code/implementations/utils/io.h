@@ -78,7 +78,7 @@ bool load_data(dt* data, int n, int* d, char* data_file) {
     return true;
 }
 
-void save_data(dt* data, int n, int d, char* data_file) {
+void save_data(float* data, int n, int d, char* data_file) {
     /* Function to save a matrix into a file, writing the size at the beginning
     and then all the data values */
 

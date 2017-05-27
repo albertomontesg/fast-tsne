@@ -156,7 +156,7 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
         int jD = iD+8*D;
         int jN = iN+8*N;
         for (int j = i+8; j < N_leftover_start; j+=8)
-        {            
+        {
             iiN = iN;
             iiD = iD;
             int jNii = jN + i;
@@ -303,7 +303,7 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
                 b1_accum = _mm256_hadd_ps(b1_accum, b1_accum);
 
                 const float sum0 = ((float *)&b1_accum)[0] + ((float *)&b1_accum)[1] +
-                                   ((float *)&b1_accum)[4] + ((float *)&b1_accum)[5]; 
+                                   ((float *)&b1_accum)[4] + ((float *)&b1_accum)[5];
                 const float sum = sum0 + b1_accum_leftover;
                 const float res = sum*factor;
                 DD[ii*N + jj] = res;
@@ -318,13 +318,13 @@ inline void compute_squared_euclidean_distance_normalize_high_dim_optimized(floa
 
 
 // Compute pairwise affinity perplexity
-inline void compute_pairwise_affinity_perplexity_opt_eucledian(dt* X, int N, int D, dt* P,
-                                          dt perplexity, dt* DD){
+inline void compute_pairwise_affinity_perplexity_opt_eucledian(float* X, int N, int D, float* P,
+                                          float perplexity, float* DD){
 
     #ifdef COUNTING
     int ITERS = 0;
     #endif
-    dt* mean = (dt*) _mm_malloc(D* sizeof(dt),32);
+    float* mean = (float*) _mm_malloc(D* sizeof(float),32);
     compute_squared_euclidean_distance_normalize_high_dim_optimized(X, N, D, DD, mean);
     free(mean);
 
@@ -332,11 +332,11 @@ inline void compute_pairwise_affinity_perplexity_opt_eucledian(dt* X, int N, int
     int nN = 0;
     for (int n = 0; n < N; n++) {
         int found = 0;
-        dt beta = 1.0;
-        dt min_beta = -MAX_VAL;
-        dt max_beta =  MAX_VAL;
-        dt tol = 1e-5;
-        dt sum_P;
+        float beta = 1.0;
+        float min_beta = -MAX_VAL;
+        float max_beta =  MAX_VAL;
+        float tol = 1e-5;
+        float sum_P;
 
         int iter = 0;
         while (found == 0 && iter < 200) {
@@ -347,12 +347,12 @@ inline void compute_pairwise_affinity_perplexity_opt_eucledian(dt* X, int N, int
             // Compute entropy of current row
             sum_P = MIN_VAL;
             for (int m = 0; m < N; m++) sum_P += P[nN + m];
-            dt H = 0.0;
+            float H = 0.0;
             for(int m = 0; m < N; m++) H += beta * (DD[nN + m] * P[nN + m]);
             H = (H / sum_P) + log_c(sum_P);
 
             // Evaluate whether the entropy is within the tolerance level
-            dt Hdiff = H - log_c(perplexity);
+            float Hdiff = H - log_c(perplexity);
             if(Hdiff < tol && -Hdiff < tol) {
                 found = 1;
             }
