@@ -11,9 +11,9 @@
 
 #define NUM_RUNS    31
 #define CYCLES_REQUIRED 1e5
-#define N_START     8
-#define N_STOP      8192
-#define N_INTERVAL  2
+#define N_START     500
+#define N_STOP      10000
+#define N_INTERVAL  500
 #define EPS         1e-3
 #define MEDIAN
 
@@ -184,12 +184,13 @@ int main(int argc, char **argv) {
     printf("N");
     for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
     printf("\n");
-    for (int n = n_start; n <= n_stop; n *= n_interval) {
+    for (int n = n_start; n <= n_stop; n += n_interval) {
         printf("%d", n);
 
         for (int i = 0; i < numFuncs; i++) {
             cycles = perf_test(userFuncs[i], n);
             printf(",%lf", cycles);
+            fflush(stdout);
         }
         printf("\n");
     }

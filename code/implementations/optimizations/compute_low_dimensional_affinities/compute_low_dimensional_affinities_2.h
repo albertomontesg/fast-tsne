@@ -89,8 +89,8 @@ inline float blocking2_avx(float* Y, int N, int D, float* Q) {
                     int nN = iK * N + jK;
                     int mN = jK * N + iK;
 
-                    __m256 Ym_0 = _mm256_load_ps(Y+mD);
-                    __m256 Ym_1 = _mm256_load_ps(Y+mD+8);
+                    __m256 Ym_0 = _mm256_loadu_ps(Y+mD);
+                    __m256 Ym_1 = _mm256_loadu_ps(Y+mD+8);
 
                     __m256 Ym_lo = _mm256_shuffle_ps(Ym_0, Ym_1, 136);
                     __m256 Ym_hi = _mm256_shuffle_ps(Ym_0, Ym_1, 221);
@@ -188,14 +188,14 @@ inline float blocking2_avx(float* Y, int N, int D, float* Q) {
 
                     cum_sum = _mm256_add_ps(cum_sum, sum6);
 
-                    _mm256_store_ps(Q+nN, q_0);
-                    _mm256_store_ps(Q+nN+N, q_1);
-                    _mm256_store_ps(Q+nN+2*N, q_2);
-                    _mm256_store_ps(Q+nN+3*N, q_3);
-                    _mm256_store_ps(Q+nN+4*N, q_4);
-                    _mm256_store_ps(Q+nN+5*N, q_5);
-                    _mm256_store_ps(Q+nN+6*N, q_6);
-                    _mm256_store_ps(Q+nN+7*N, q_7);
+                    _mm256_storeu_ps(Q+nN, q_0);
+                    _mm256_storeu_ps(Q+nN+N, q_1);
+                    _mm256_storeu_ps(Q+nN+2*N, q_2);
+                    _mm256_storeu_ps(Q+nN+3*N, q_3);
+                    _mm256_storeu_ps(Q+nN+4*N, q_4);
+                    _mm256_storeu_ps(Q+nN+5*N, q_5);
+                    _mm256_storeu_ps(Q+nN+6*N, q_6);
+                    _mm256_storeu_ps(Q+nN+7*N, q_7);
 
 
                     // Check if we are in the diagonal or not
@@ -205,14 +205,14 @@ inline float blocking2_avx(float* Y, int N, int D, float* Q) {
 
                         cum_sum = _mm256_add_ps(cum_sum, sum6);
 
-                        _mm256_store_ps(Q+mN, q_0);
-                        _mm256_store_ps(Q+mN+N, q_1);
-                        _mm256_store_ps(Q+mN+2*N, q_2);
-                        _mm256_store_ps(Q+mN+3*N, q_3);
-                        _mm256_store_ps(Q+mN+4*N, q_4);
-                        _mm256_store_ps(Q+mN+5*N, q_5);
-                        _mm256_store_ps(Q+mN+6*N, q_6);
-                        _mm256_store_ps(Q+mN+7*N, q_7);
+                        _mm256_storeu_ps(Q+mN, q_0);
+                        _mm256_storeu_ps(Q+mN+N, q_1);
+                        _mm256_storeu_ps(Q+mN+2*N, q_2);
+                        _mm256_storeu_ps(Q+mN+3*N, q_3);
+                        _mm256_storeu_ps(Q+mN+4*N, q_4);
+                        _mm256_storeu_ps(Q+mN+5*N, q_5);
+                        _mm256_storeu_ps(Q+mN+6*N, q_6);
+                        _mm256_storeu_ps(Q+mN+7*N, q_7);
 
                     }
                 }
@@ -246,8 +246,8 @@ inline float blocking2_avx(float* Y, int N, int D, float* Q) {
                 int nN = iiB * N + jjB;
                 int mN = jjB * N + iiB;
 
-                __m256 Ym_0 = _mm256_load_ps(Y+mD);
-                __m256 Ym_1 = _mm256_load_ps(Y+mD+8);
+                __m256 Ym_0 = _mm256_loadu_ps(Y+mD);
+                __m256 Ym_1 = _mm256_loadu_ps(Y+mD+8);
 
                 __m256 Ym_lo = _mm256_shuffle_ps(Ym_0, Ym_1, 136);
                 __m256 Ym_hi = _mm256_shuffle_ps(Ym_0, Ym_1, 221);
@@ -334,27 +334,27 @@ inline float blocking2_avx(float* Y, int N, int D, float* Q) {
 
                 cum_sum = _mm256_add_ps(cum_sum, sum6);
 
-                _mm256_store_ps(Q+nN, q_0);
-                _mm256_store_ps(Q+nN+N, q_1);
-                _mm256_store_ps(Q+nN+2*N, q_2);
-                _mm256_store_ps(Q+nN+3*N, q_3);
-                _mm256_store_ps(Q+nN+4*N, q_4);
-                _mm256_store_ps(Q+nN+5*N, q_5);
-                _mm256_store_ps(Q+nN+6*N, q_6);
-                _mm256_store_ps(Q+nN+7*N, q_7);
+                _mm256_storeu_ps(Q+nN, q_0);
+                _mm256_storeu_ps(Q+nN+N, q_1);
+                _mm256_storeu_ps(Q+nN+2*N, q_2);
+                _mm256_storeu_ps(Q+nN+3*N, q_3);
+                _mm256_storeu_ps(Q+nN+4*N, q_4);
+                _mm256_storeu_ps(Q+nN+5*N, q_5);
+                _mm256_storeu_ps(Q+nN+6*N, q_6);
+                _mm256_storeu_ps(Q+nN+7*N, q_7);
 
                 transpose8_ps(q_0, q_1, q_2, q_3, q_4, q_5, q_6, q_7);
 
                 cum_sum = _mm256_add_ps(cum_sum, sum6);
 
-                _mm256_store_ps(Q+mN, q_0);
-                _mm256_store_ps(Q+mN+N, q_1);
-                _mm256_store_ps(Q+mN+2*N, q_2);
-                _mm256_store_ps(Q+mN+3*N, q_3);
-                _mm256_store_ps(Q+mN+4*N, q_4);
-                _mm256_store_ps(Q+mN+5*N, q_5);
-                _mm256_store_ps(Q+mN+6*N, q_6);
-                _mm256_store_ps(Q+mN+7*N, q_7);
+                _mm256_storeu_ps(Q+mN, q_0);
+                _mm256_storeu_ps(Q+mN+N, q_1);
+                _mm256_storeu_ps(Q+mN+2*N, q_2);
+                _mm256_storeu_ps(Q+mN+3*N, q_3);
+                _mm256_storeu_ps(Q+mN+4*N, q_4);
+                _mm256_storeu_ps(Q+mN+5*N, q_5);
+                _mm256_storeu_ps(Q+mN+6*N, q_6);
+                _mm256_storeu_ps(Q+mN+7*N, q_7);
 
 
             }
@@ -488,8 +488,8 @@ inline float blocking2_avx(float* Y, int N, int D, float* Q) {
             int nN = iB * N + jB;
             int mN = jB * N + iB;
 
-            __m256 Ym_0 = _mm256_load_ps(Y+mD);
-            __m256 Ym_1 = _mm256_load_ps(Y+mD+8);
+            __m256 Ym_0 = _mm256_loadu_ps(Y+mD);
+            __m256 Ym_1 = _mm256_loadu_ps(Y+mD+8);
 
             __m256 Ym_lo = _mm256_shuffle_ps(Ym_0, Ym_1, 136);
             __m256 Ym_hi = _mm256_shuffle_ps(Ym_0, Ym_1, 221);
@@ -587,14 +587,14 @@ inline float blocking2_avx(float* Y, int N, int D, float* Q) {
 
             cum_sum = _mm256_add_ps(cum_sum, sum6);
 
-            _mm256_store_ps(Q+nN, q_0);
-            _mm256_store_ps(Q+nN+N, q_1);
-            _mm256_store_ps(Q+nN+2*N, q_2);
-            _mm256_store_ps(Q+nN+3*N, q_3);
-            _mm256_store_ps(Q+nN+4*N, q_4);
-            _mm256_store_ps(Q+nN+5*N, q_5);
-            _mm256_store_ps(Q+nN+6*N, q_6);
-            _mm256_store_ps(Q+nN+7*N, q_7);
+            _mm256_storeu_ps(Q+nN, q_0);
+            _mm256_storeu_ps(Q+nN+N, q_1);
+            _mm256_storeu_ps(Q+nN+2*N, q_2);
+            _mm256_storeu_ps(Q+nN+3*N, q_3);
+            _mm256_storeu_ps(Q+nN+4*N, q_4);
+            _mm256_storeu_ps(Q+nN+5*N, q_5);
+            _mm256_storeu_ps(Q+nN+6*N, q_6);
+            _mm256_storeu_ps(Q+nN+7*N, q_7);
 
 
             // Check if we are in the diagonal or not
@@ -604,14 +604,14 @@ inline float blocking2_avx(float* Y, int N, int D, float* Q) {
 
                 cum_sum = _mm256_add_ps(cum_sum, sum6);
 
-                _mm256_store_ps(Q+mN, q_0);
-                _mm256_store_ps(Q+mN+N, q_1);
-                _mm256_store_ps(Q+mN+2*N, q_2);
-                _mm256_store_ps(Q+mN+3*N, q_3);
-                _mm256_store_ps(Q+mN+4*N, q_4);
-                _mm256_store_ps(Q+mN+5*N, q_5);
-                _mm256_store_ps(Q+mN+6*N, q_6);
-                _mm256_store_ps(Q+mN+7*N, q_7);
+                _mm256_storeu_ps(Q+mN, q_0);
+                _mm256_storeu_ps(Q+mN+N, q_1);
+                _mm256_storeu_ps(Q+mN+2*N, q_2);
+                _mm256_storeu_ps(Q+mN+3*N, q_3);
+                _mm256_storeu_ps(Q+mN+4*N, q_4);
+                _mm256_storeu_ps(Q+mN+5*N, q_5);
+                _mm256_storeu_ps(Q+mN+6*N, q_6);
+                _mm256_storeu_ps(Q+mN+7*N, q_7);
 
             }
         }
@@ -787,8 +787,8 @@ inline float blocking_avx(float* Y, int N, int D, float* Q) {
             int nN = iK * N + jK;
             int mN = jK * N + iK;
 
-            __m256 Ym_0 = _mm256_load_ps(Y+mD);
-            __m256 Ym_1 = _mm256_load_ps(Y+mD+8);
+            __m256 Ym_0 = _mm256_loadu_ps(Y+mD);
+            __m256 Ym_1 = _mm256_loadu_ps(Y+mD+8);
 
             __m256 Ym_lo = _mm256_shuffle_ps(Ym_0, Ym_1, 136);
             __m256 Ym_hi = _mm256_shuffle_ps(Ym_0, Ym_1, 221);
@@ -886,14 +886,14 @@ inline float blocking_avx(float* Y, int N, int D, float* Q) {
 
             cum_sum = _mm256_add_ps(cum_sum, sum6);
 
-            _mm256_store_ps(Q+nN, q_0);
-            _mm256_store_ps(Q+nN+N, q_1);
-            _mm256_store_ps(Q+nN+2*N, q_2);
-            _mm256_store_ps(Q+nN+3*N, q_3);
-            _mm256_store_ps(Q+nN+4*N, q_4);
-            _mm256_store_ps(Q+nN+5*N, q_5);
-            _mm256_store_ps(Q+nN+6*N, q_6);
-            _mm256_store_ps(Q+nN+7*N, q_7);
+            _mm256_storeu_ps(Q+nN, q_0);
+            _mm256_storeu_ps(Q+nN+N, q_1);
+            _mm256_storeu_ps(Q+nN+2*N, q_2);
+            _mm256_storeu_ps(Q+nN+3*N, q_3);
+            _mm256_storeu_ps(Q+nN+4*N, q_4);
+            _mm256_storeu_ps(Q+nN+5*N, q_5);
+            _mm256_storeu_ps(Q+nN+6*N, q_6);
+            _mm256_storeu_ps(Q+nN+7*N, q_7);
 
 
             // Check if we are in the diagonal or not
@@ -903,14 +903,14 @@ inline float blocking_avx(float* Y, int N, int D, float* Q) {
 
                 cum_sum = _mm256_add_ps(cum_sum, sum6);
 
-                _mm256_store_ps(Q+mN, q_0);
-                _mm256_store_ps(Q+mN+N, q_1);
-                _mm256_store_ps(Q+mN+2*N, q_2);
-                _mm256_store_ps(Q+mN+3*N, q_3);
-                _mm256_store_ps(Q+mN+4*N, q_4);
-                _mm256_store_ps(Q+mN+5*N, q_5);
-                _mm256_store_ps(Q+mN+6*N, q_6);
-                _mm256_store_ps(Q+mN+7*N, q_7);
+                _mm256_storeu_ps(Q+mN, q_0);
+                _mm256_storeu_ps(Q+mN+N, q_1);
+                _mm256_storeu_ps(Q+mN+2*N, q_2);
+                _mm256_storeu_ps(Q+mN+3*N, q_3);
+                _mm256_storeu_ps(Q+mN+4*N, q_4);
+                _mm256_storeu_ps(Q+mN+5*N, q_5);
+                _mm256_storeu_ps(Q+mN+6*N, q_6);
+                _mm256_storeu_ps(Q+mN+7*N, q_7);
 
             }
         }

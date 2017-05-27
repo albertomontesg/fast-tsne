@@ -55,3 +55,5 @@ datum
 bin
 
 .remote-sync.json
+
+lsf.o*
