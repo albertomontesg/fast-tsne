@@ -63,7 +63,6 @@ inline void unfold_accumulators_avx(float* Y, float* P, float* Q, float sum_Q,
         __m256 uY_2 = _mm256_loadu_ps(uY+nD+16);
         __m256 uY_3 = _mm256_loadu_ps(uY+nD+24);
 
-
         int m, mD;
 		for (m = 0, mD = 0; m + 8 <= N; m += 8, mD += 8*D) {
             __m256 Ym_00 = _mm256_broadcast_ss(Y+mD);

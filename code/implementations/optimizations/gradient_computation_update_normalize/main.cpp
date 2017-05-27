@@ -5,17 +5,16 @@
 #include <vector>
 #include <algorithm>
 #include "../../utils/tsc_x86.h"
-#include "../../utils/random.h"
 #include "gradient_computation_update_normalize_2.h"
 
 
 #define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e6
-#define N_START     8
-#define N_STOP      8192
-#define N_INTERVAL  2
-#define EPS         1e-4
-// #define MEDIAN
+#define N_START     500
+#define N_STOP      10000
+#define N_INTERVAL  500
+#define EPS         1e-3
+#define MEDIAN
 
 const int D = 2;
 const float momentum = 0.5;
@@ -64,13 +63,24 @@ void add_function(comp_func f, char *name) {
   numFuncs++;
 }
 
+void rand_matrix(float* m, size_t row, size_t col) {
+	for (size_t i = 0; i < row*col; i++) {
+		m[i] = static_cast<float>(rand() + 1) / RAND_MAX;
+	}
+}
+
+void set_zeros(float* d, size_t row, size_t col) {
+    for (size_t i = 0; i < row*col; i++) d[i] = 0;
+}
+
 void build(float ** d, int row, int col) {
-    *d = (float*) malloc(row * col * sizeof(float));
+    *d = (float*) _mm_malloc(row * col * sizeof(float), 32);
     rand_matrix(*d, row, col);
 }
 
 void build_zeros(float ** d, int row, int col) {
-    *d = (float*) calloc(row * col, sizeof(float));
+    *d = (float*) _mm_malloc(row * col * sizeof(float), 32);
+    set_zeros(*d, row, col);
 }
 
 void zero_diag(float *d, int N) {
@@ -88,7 +98,7 @@ void copy(float* src, float* dst, int N) {
 }
 
 void destroy(float* d) {
-    free(d);
+    _mm_free(d);
     d = NULL;
 }
 
@@ -200,13 +210,6 @@ int main(int argc, char **argv) {
         build_zeros(&dC_r, N, D);     // Result from any other function
         f(Y_r, P, Q, sum_Q, N, D, dC_r, uY_r, momentum, eta);
 
-        // for (int j = 0; j < N*D; j++) {
-        //     error = fabs(dC_r[j] - dC_c[j]);
-        //     if (error > (EPS * fabs(dC_c[j]))) {
-        //         printf("ERROR!!!! the results for the \"%s\" function are different to the correct implementation in dC at position %d with n=%d\nError: %lf != %lf\n", funcNames[i], j, N, dC_r[j], dC_c[j]);
-        //         exit(1);
-        //     }
-        // }
         for (int j = 0; j < N*D; j++) {
             error = fabs(uY_r[j] - uY_c[j]);
             if (error > (EPS * fabs(uY_c[j]))) {
@@ -237,12 +240,13 @@ int main(int argc, char **argv) {
     printf("N");
     for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
     printf("\n");
-    for (int n = n_start; n <= n_stop; n *= n_interval) {
+    for (int n = n_start; n <= n_stop; n += n_interval) {
         printf("%d", n);
 
         for (int i = 0; i < numFuncs; i++) {
             cycles = perf_test(userFuncs[i], n);
             printf(",%lf", cycles);
+            fflush(stdout);
         }
         printf("\n");
     }
