@@ -38,9 +38,7 @@ void register_functions() {
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    // add_function(&unrolling, "unrolling");
     add_function(&perplexity_blocking, "blocking");
-    //add_function(&base_version, "base_version");
 }
 
 /*
@@ -166,7 +164,6 @@ int main(int argc, char **argv) {
 
     comp_func base_f = userFuncs[0];
     base_f(X_reference, N, D, P_reference, perplexity, DD_reference);
-    printf("implemetations: \n");
     double error = 0.;
     for (int i = 1; i < numFuncs; i++) {
         comp_func f = userFuncs[i];
