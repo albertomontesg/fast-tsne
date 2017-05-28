@@ -41,7 +41,7 @@ case $1 in
         touch $COUNT_FILE
 
         echo $HEADER > $CYCLES_FILE
-        echo "N, cycles" > $COUNT_FILE
+        echo "N,iters" > $COUNT_FILE
 
         $CC $FLAGS -DBASELINE -DCOUNTING $SRC -o $COUNT_BIN
         $CC $FLAGS -DBASELINE -DBENCHMARK $SRC -o $CYCLES_BIN
@@ -65,7 +65,7 @@ case $1 in
         touch $COUNT_FILE
 
         echo $HEADER > $CYCLES_FILE
-        echo "N, cycles" > $COUNT_FILE
+        echo "N,iters" > $COUNT_FILE
 
         $CC $FLAGS -DSCALAR -DCOUNTING $SRC -o $COUNT_BIN
         $CC $FLAGS -DSCALAR -DBENCHMARK $SRC -o $CYCLES_BIN
@@ -89,7 +89,7 @@ case $1 in
         touch $COUNT_FILE
 
         echo $HEADER > $CYCLES_FILE
-        echo "N, cycles" > $COUNT_FILE
+        echo "N,iters" > $COUNT_FILE
 
         $CC $FLAGS -DAVX -DCOUNTING $SRC -o $COUNT_BIN
         $CC $FLAGS -DAVX -DBENCHMARK $SRC -o $CYCLES_BIN
