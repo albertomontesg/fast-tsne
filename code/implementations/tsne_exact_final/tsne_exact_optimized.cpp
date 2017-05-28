@@ -152,7 +152,7 @@ void run(float* X, int N, int D, float* Y, int no_dims, float perplexity,
 	start_symmetrize = start_tsc();
 	#endif
 	// Compute
-	symmetrize_affinities(P, N);
+	symmetrize_affinities(P, N, 12.0);
 	// End compute
 	#ifdef BENCHMARK
 	cycles_symmetrize += (double) stop_tsc(start_symmetrize);

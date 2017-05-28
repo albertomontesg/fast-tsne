@@ -3,7 +3,7 @@
 
 
 // Symmetrize pairwise affinities P_ij
-inline void symmetrize_affinities(float* P, int N) {
+inline void symmetrize_affinities(float* P, int N, float scale) {
 	int nN = 0;
 	for(int n = 0; n < N; n++) {
 		int mN = (n + 1) * N;
@@ -17,6 +17,7 @@ inline void symmetrize_affinities(float* P, int N) {
 	float sum_P = .0;
 	for(int i = 0; i < N * N; i++) sum_P += P[i];
 	for(int i = 0; i < N * N; i++) P[i] /= sum_P;
+    for(int i = 0; i < N * N; i++) P[i] *= scale;
 }
 
 #endif
