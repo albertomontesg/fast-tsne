@@ -5,15 +5,14 @@
 #include <vector>
 #include <algorithm>
 #include "../../utils/tsc_x86.h"
-#include "../../utils/random.h"
 #include "symmetrize_affinities.h"
 
 
 #define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e5
-#define N_START     8
-#define N_STOP      8192
-#define N_INTERVAL  2
+#define N_START     500
+#define N_STOP      10000
+#define N_INTERVAL  500
 #define EPS         1e-3
 
 const int D = 2;
@@ -33,13 +32,14 @@ void add_function(comp_func f, char *name);
 * Use add_function(func, description) to add your own functions
 */
 void register_functions() {
-    add_function(&base_version, "base_version");
+    add_function(&base_version, (char*) "base_version");
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
-    // add_function(&unrolling, "unrolling");
-    add_function(&blocking, "blocking");
-    add_function(&blocking2, "blocking2");
+    add_function(&unrolling, (char*) "unrolling");
+    add_function(&blocking, (char*) "blocking");
+    add_function(&blocking2, (char*) "blocking2");
+    add_function(&blocking3, (char*) "blocking3");
     // add_function(&base_version, "base_version");
 }
 
@@ -61,13 +61,20 @@ void add_function(comp_func f, char *name) {
   numFuncs++;
 }
 
+
+void rand_matrix(float* m, size_t row, size_t col) {
+	for (size_t i = 0; i < row*col; i++) {
+		m[i] = static_cast<float>(rand() + 1) / RAND_MAX;
+	}
+}
+
 void build(float ** d, int row, int col) {
-    *d = (float*) aligned_alloc( 32, row * col * sizeof(float));
+    *d = (float*) _mm_malloc(row * col * sizeof(float), 32);
     rand_matrix(*d, row, col);
 }
 
 void destroy(float* d) {
-    free(d);
+    _mm_free(d);
     d = NULL;
 }
 
@@ -130,8 +137,8 @@ int main(int argc, char **argv) {
     int N = 512;
     float *P1, *P2, *P_copy; float scale=1.0/12.0;
     build(&P1, N, N);
-    P_copy = (float*) aligned_alloc( 32, N * N * sizeof(float) );
-    P2 = (float*) aligned_alloc( 32, N * N * sizeof(float) );
+    P_copy = (float*) _mm_malloc(N * N * sizeof(float), 32);
+    P2 = (float*) _mm_malloc(N * N * sizeof(float), 32);
     std::copy(P1, P1+(N*N), P_copy);
     comp_func base_f = userFuncs[0];
     base_f(P1, N, scale);
@@ -158,7 +165,7 @@ int main(int argc, char **argv) {
     printf("N");
     for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
     printf("\n");
-    for (int n = n_start; n <= n_stop; n *= n_interval) {
+    for (int n = n_start; n <= n_stop; n += n_interval) {
         printf("%d", n);
 
         for (int i = 0; i < numFuncs; i++) {
