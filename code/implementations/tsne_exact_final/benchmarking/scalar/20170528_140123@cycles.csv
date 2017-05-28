@@ -1,4 +1,4 @@
-N,pairwise_squared_euclidean_distance,pairwise_affinity_perplexity,symmetrize_affinities,low_dimensional_affinities,gradient_computation_update_normalize
+N,pairwise_squared_euclidean_distance,pairwise_affinity_perplexity,symmetrize_affinities,low_dimensional_affinities,gradient_computation_update_normalize,total
 500,62840234.000000,21181778.000000,656115.000000,206557709.000000,1402517485.000000,1693753321.000000
 1000,256318740.000000,80533677.000000,3058488.000000,955425639.000000,5671718980.000000,6967055524.000000
 1500,604989920.000000,186538405.000000,8675327.000000,2481982518.000000,12718987641.000000,16001173811.000000
