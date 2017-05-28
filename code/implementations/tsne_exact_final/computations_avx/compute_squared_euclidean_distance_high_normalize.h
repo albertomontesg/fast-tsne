@@ -3,7 +3,7 @@
 
 #include <x86intrin.h>
 
-inline void compute_squared_eucledian_distance_high_normalize(float* X, int N, int D, float* DD, float* mean) {
+inline void compute_squared_euclidean_distance_high_normalize(float* X, int N, int D, float* DD, float* mean) {
 
     const int leftover_start = D-D%8;
     const int N_leftover_start = N-N%8;

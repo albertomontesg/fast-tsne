@@ -46,7 +46,8 @@ inline void transpose8_ps(__m256 &row0, __m256 &row1, __m256 &row2,
     row7 = _mm256_permute2f128_ps(__tt3, __tt7, 0x31);
 }
 
-inline float blocking2_avx(float* Y, int N, int D, float* Q) {
+inline float compute_low_dimensional_affinities(float* Y, int N, int D,
+        float* Q) {
     const int K = 8; // Desired block size
     const int B = 32;
 

@@ -7,28 +7,27 @@
 #include "../utils/io.h"
 #include "../utils/tsc_x86.h"
 #include "../utils/random.h"
-// #include "../utils/data_type.h"
-// #include "computations/compute_low_dimensional_affinities.h"
-// #include "computations/compute_pairwise_affinity_perplexity.h"
-// #include "computations/compute_squared_euclidean_distance_normalize_high_dim_optimized.h"
-// #include "computations/early_exageration.h"
-// #include "computations/gradient_computation.h"
-// #include "computations/gradient_update.h"
-// #include "computations/normalize.h"
-// #include "computations/symmetrize_affinities.h"
-// #include "computations/training_step.h"
 
 #ifdef BASELINE
-#include "computation_baseline/compute_low_dimensional_affinities.h"
-#include "computation_baseline/gradient_computation_update_normalize.h"
+#include "computations_baseline/compute_low_dimensional_affinities.h"
+#include "computations_baseline/gradient_computation_update_normalize.h"
+#include "computations_baseline/compute_squared_euclidean_distance_high_normalize.h"
+#include "computations_baseline/symmetrize_affinities.h"
+#include "computations_baseline/compute_pairwise_affinity_perplexity.h"
 
-#elseif SCALAR
-#include "computation_scalar/compute_low_dimensional_affinities.h"
-#include "computation_scalar/gradient_computation_update_normalize.h"
+#elif SCALAR
+#include "computations_scalar/compute_low_dimensional_affinities.h"
+#include "computations_scalar/gradient_computation_update_normalize.h"
+#include "computations_scalar/compute_squared_euclidean_distance_high_normalize.h"
+#include "computations_scalar/symmetrize_affinities.h"
+#include "computations_scalar/compute_pairwise_affinity_perplexity.h"
 
-#elseif AVX
-#include "computation_avx/compute_low_dimensional_affinities.h"
-#include "computation_avx/gradient_computation_update_normalize.h"
+#elif AVX
+#include "computations_avx/compute_low_dimensional_affinities.h"
+#include "computations_avx/gradient_computation_update_normalize.h"
+#include "computations_avx/compute_squared_euclidean_distance_high_normalize.h"
+#include "computations_avx/symmetrize_affinities.h"
+#include "computations_avx/compute_pairwise_affinity_perplexity.h"
 
 #else
 #define EXIT
@@ -40,9 +39,9 @@
 
 #ifdef BENCHMARK
 double cycles = 0;
-double cycles_perplexity = 0, cycles_symmetrize = 0;
+double cycles_distance = 0, cycles_perplexity = 0, cycles_symmetrize = 0;
 double cycles_ld_affinity = 0, cycles_gradient = 0;
-myInt64 start_perplexity, start_symmetrize;
+myInt64 start_distance, start_perplexity, start_symmetrize;
 myInt64 start_ld_affinity, start_gradient;
 #endif
 
@@ -114,17 +113,30 @@ bool load_data(float* data, int n, int* d, char* data_file) {
 void run(float* X, int N, int D, float* Y, int no_dims, float perplexity,
 	 	 int max_iter) {
 
+    // Normalize input and compute pairwise euclidean distances for X
+    float* DD = (float*) _mm_malloc(N * N * sizeof(float), 32);
+    float* mean = (float*) _mm_malloc(D * sizeof(float), 32);
+    if(DD == NULL) { printf("[DD] Memory allocation failed!\n"); exit(1); }
+    if(mean == NULL) { printf("[mean] Memory allocation failed!\n"); exit(1); }
+    #ifdef BENCHMARK
+    start_distance = start_tsc();
+    #endif
+    compute_squared_euclidean_distance_high_normalize(X, N, D, DD, mean);
+    #ifdef BENCHMARK
+    cycles_distance += (double) stop_tsc(start_distance);
+    #endif
+
+
 	// Compute pairsiwe affinity with perplexity which include binary search
 	// for the best perplexity value
-	float* P = (float*) calloc(N * N, sizeof(float));
-	float* DD = (float*) _mm_malloc(N * N * sizeof(float),32);
+	float* P = (float*) _mm_malloc(N * N * sizeof(float), 32);
 	if(P == NULL) { printf("[P] Memory allocation failed!\n"); exit(1); }
-	if(DD == NULL) { printf("[DD] Memory allocation failed!\n"); exit(1); }
+    for (int i = 00; i < N*N; i++) P[i] = 0;
 	#ifdef BENCHMARK
 	start_perplexity = start_tsc();
 	#endif
 	// Compute
-	compute_pairwise_affinity_perplexity_opt_eucledian(X, N, D, P, perplexity, DD);
+	compute_pairwise_affinity_perplexity(X, N, D, P, perplexity, DD);
 	// End compute
 	#ifdef BENCHMARK
 	cycles_perplexity += (double) stop_tsc(start_perplexity);
@@ -163,12 +175,11 @@ void run(float* X, int N, int D, float* Y, int no_dims, float perplexity,
 
 
 	// Initialize Q low dimensionality affinity matrix and gradient dC
-	float* Q = (float*) _mm_malloc(N * N * sizeof(float),32);
-	float* uY = (float*) calloc(N * no_dims, sizeof(float));
-	float* mean = (float*) _mm_malloc(no_dims * sizeof(float), 32);
+	float* Q = (float*) _mm_malloc(N * N * sizeof(float), 32);
+	float* uY = (float*) _mm_malloc(N * no_dims * sizeof(float), 32);
+    for (int i = 0; i < N*no_dims; i++) uY[i] = 0;
 	if(Q == NULL) { printf("[Q] Memory allocation failed!\n"); exit(1); }
 	if(uY == NULL) { printf("[uY] Memory allocation failed!\n"); exit(1); }
-	if(mean == NULL) { printf("[mean] Memory allocation failed!\n"); exit(1); }
 
 	// As the counting is perform before entering the main training loop
 	// it is not necessary to run it, so time is saved to count the
@@ -183,23 +194,22 @@ void run(float* X, int N, int D, float* Y, int no_dims, float perplexity,
 	float final_momentum = .8;
 	// Perform the main training loop
 	for (int iter = 0; iter < max_iter; iter++) {
-
         // Compute the main training loop
         #ifdef BENCHMARK
-        start_training = start_tsc();
+        start_ld_affinity = start_tsc();
         #endif
         float sum_Q = compute_low_dimensional_affinities(Y, N, no_dims, Q);
         #ifdef BENCHMARK
-        cycles_training += (double) stop_tsc(start_training);
+        cycles_ld_affinity += (double) stop_tsc(start_ld_affinity);
         #endif
 
 		// Compute the main training loop
 		#ifdef BENCHMARK
-		start_training = start_tsc();
+		start_gradient = start_tsc();
 		#endif
 		gradient_computation_update_normalize(Y, P, Q, sum_Q, N, no_dims, uY, momentum, eta);
 		#ifdef BENCHMARK
-		cycles_training += (double) stop_tsc(start_training);
+		cycles_gradient += (double) stop_tsc(start_gradient);
 		#endif
 
 		// Switch momentum
@@ -212,13 +222,15 @@ void run(float* X, int N, int D, float* Y, int no_dims, float perplexity,
 	}
 
 	#ifdef BENCHMARK
-	cycles += cycles_normalize + cycles_perplexity + cycles_symmetrize + cycles_early_exageration + cycles_ld_affinity + cycles_gradient;
+	cycles += cycles_distance + cycles_perplexity + cycles_symmetrize +
+        cycles_ld_affinity + cycles_gradient;
 	#endif
 
-	free(P); 		P = NULL;
-	free(DD); 		DD = NULL;
-	free(Q);		Q = NULL;
-	free(mean);		mean = NULL;
+	_mm_free(P); 		P = NULL;
+	_mm_free(DD); 		DD = NULL;
+	_mm_free(Q);		Q = NULL;
+	_mm_free(mean);		mean = NULL;
+    _mm_free(uY);       uY = NULL;
 }
 
 int main(int argc, char **argv) {
@@ -300,24 +312,23 @@ int main(int argc, char **argv) {
 	}
 
     #ifdef BENCHMARK
-	cycles_normalize /= (double) num_runs;
+	cycles_distance /= (double) num_runs;
 	cycles_perplexity /= (double) num_runs;
 	cycles_symmetrize /= (double) num_runs;
-    cycles_early_exageration /= (double) num_runs;
 	cycles_ld_affinity /= (double) num_runs;
 	cycles_gradient /= (double) num_runs;
 
 	cycles /= (double) num_runs;
-	printf("%lf %lf %lf %lf %lf %lf %lf\n", cycles_normalize,
-		cycles_perplexity, cycles_symmetrize, cycles_early_exageration,
-        cycles_training, cycles);
+	printf("%d,%lf,%lf,%lf,%lf,%lf,%lf\n", N,
+		cycles_distance, cycles_perplexity, cycles_symmetrize,
+        cycles_ld_affinity, cycles_gradient, cycles);
     #endif
 
 	// Save the results
 	save_data(Y, N, no_dims, result_file);
 
 	// Clean up the memory
-	free(data);   	data = NULL;
-	free(X);   		X = NULL;
-	free(Y);      	Y = NULL;
+	_mm_free(data);   	data = NULL;
+	_mm_free(X);   		X = NULL;
+	_mm_free(Y);      	Y = NULL;
 }

@@ -5,7 +5,7 @@
 #include <immintrin.h>
 
 // Compute squared euclidean disctance for all pairs of vectors X_i X_j
-inline void compute_squared_euclidean_distance(float* X, int N, int D, float* DD) {
+inline void compute_squared_euclidean_distance_ld(float* X, int N, int D, float* DD) {
 	const float* XnD = X;
     for(int n = 0; n < N; ++n, XnD += D) {
         const float* XmD = XnD + D;
@@ -25,7 +25,7 @@ inline void compute_squared_euclidean_distance(float* X, int N, int D, float* DD
 
 inline float compute_low_dimensional_affinities(float* Y, int N, int no_dims, float* Q) {
 
-	compute_squared_euclidean_distance(Y, N, no_dims, Q);
+	compute_squared_euclidean_distance_ld(Y, N, no_dims, Q);
 
 	float sum_Q = .0;
     int nN = 0;

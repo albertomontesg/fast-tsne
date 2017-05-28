@@ -1,9 +1,9 @@
 #ifndef COMPUTE_SQUARED_EUCLEDIAN_DISTANCE_HIGH_NORMALIZE_H
 #define COMPUTE_SQUARED_EUCLEDIAN_DISTANCE_HIGH_NORMALIZE_H
 
-#include <x86intrin.h>
+#include <math.h>
 
-inline void compute_squared_eucledian_distance_high_normalize(float* X, int N, int D, float* DD, float* mean, int max_value) {
+inline void compute_squared_euclidean_distance_high_normalize(float* X, int N, int D, float* DD, float* mean) {
 
     const int leftover_start = D-D%8;
 
@@ -80,8 +80,8 @@ inline void compute_squared_eucledian_distance_high_normalize(float* X, int N, i
                 accum7 += prod7;
                 // std::cout << d << std::endl;
             }
-            
-            const float sum0 = accum1 + accum2 + accum3 + accum4 + accum5 + accum6 + accum7; 
+
+            const float sum0 = accum1 + accum2 + accum3 + accum4 + accum5 + accum6 + accum7;
             for(int d = leftover_start; d < D; d++)
             {
                 // std::cout << d << std::endl;
