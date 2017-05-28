@@ -56,9 +56,51 @@ case $1 in
 
         ;;
     scalar)
+        CYCLES_FILE=benchmarking/scalar/$TODAY@cycles.csv
+        COUNT_FILE=benchmarking/scalar/$TODAY@iters.csv
+        CYCLES_BIN=./bin/tsne_scalar_bench.o
+        COUNT_BIN=./bin/tsne_scalar_count.o
+
+        touch $CYCLES_FILE
+        touch $COUNT_FILE
+
+        echo $HEADER > $CYCLES_FILE
+        echo "N, cycles" > $COUNT_FILE
+
+        $CC $FLAGS -DSCALAR -DCOUNTING $SRC -o $COUNT_BIN
+        $CC $FLAGS -DSCALAR -DBENCHMARK $SRC -o $CYCLES_BIN
+
+        for N in $(seq $START $INTERVAL $STOP); do
+            printf "$N";
+            $COUNT_BIN $DATASET /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> $COUNT_FILE
+            printf "."
+            $CYCLES_BIN $DATASET /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> $CYCLES_FILE
+            printf " DONE\n"
+        done;
 
         ;;
     avx)
+        CYCLES_FILE=benchmarking/avx/$TODAY@cycles.csv
+        COUNT_FILE=benchmarking/avx/$TODAY@iters.csv
+        CYCLES_BIN=./bin/tsne_avx_bench.o
+        COUNT_BIN=./bin/tsne_avx_count.o
+
+        touch $CYCLES_FILE
+        touch $COUNT_FILE
+
+        echo $HEADER > $CYCLES_FILE
+        echo "N, cycles" > $COUNT_FILE
+
+        $CC $FLAGS -DAVX -DCOUNTING $SRC -o $COUNT_BIN
+        $CC $FLAGS -DAVX -DBENCHMARK $SRC -o $CYCLES_BIN
+
+        for N in $(seq $START $INTERVAL $STOP); do
+            printf "$N";
+            $COUNT_BIN $DATASET /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> $COUNT_FILE
+            printf "."
+            $CYCLES_BIN $DATASET /dev/null $N $PERPLEXITY $DIMS $MAX_ITER >> $CYCLES_FILE
+            printf " DONE\n"
+        done;
 
         ;;
 esac
