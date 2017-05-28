@@ -113,10 +113,9 @@ inline void blocking(float* P, int N, float scale) {
     __m256 sum_P_vector = _mm256_setzero_ps();
 	int m = 0; int n=0;
 	//build 8*8 blocks an compute with them
-	for(n = 0; n < N; n+=8) {
+	for(n = 0; n + 8 <= N; n+=8) {
 		int mN = nN; // mN: start of block
-        int mN_transpose = n*N + n; // start of transposed block
-		for(m = n; m < N; m+=8) {
+		for(m = n; m + 8 <= N; m+=8) {
             // Load first blocks (correspond to rows)
             int row0_index = mN;
 			int row1_index = mN + N;
@@ -261,7 +260,7 @@ inline void blocking(float* P, int N, float scale) {
                 sum_P -= P[mN + 6*N + 6];
                 P[mN + 7*N + 7] *= 0.5;
                 sum_P -= P[mN + 7*N + 7];
-                }
+            }
 
 			mN += 8; // next block
             mN_transpose += N; // next transposed block
@@ -272,8 +271,8 @@ inline void blocking(float* P, int N, float scale) {
 
     //TODO: N not dividable by 8 case. Further optimizable?
     if(N%8 != 0){
-        int nN = N * ((n-8)+1);
-        for (int n = (n-8)+1; n < N; ++n){// where left off
+        // int nN = N * ((n-8)+1);
+        for (; n < N; ++n) { // where left off
 		    int mN = 0;
             for(int m = 0; m < N; m++) {
                 if(m==n){
@@ -297,7 +296,7 @@ inline void blocking(float* P, int N, float scale) {
 	__m256 sum_vec = _mm256_set1_ps(sum_P);
 	__m256 scale_sum_vec = _mm256_div_ps(scale_vec,sum_vec);
 	int j = 0;
-	for(j = 0; j < N * N; j+=8){
+	for(j = 0; j + 8 <= N * N; j+=8){
 		__m256 P_vec = _mm256_loadu_ps(P+j);
 		__m256 P_vec_scaled_norm = _mm256_mul_ps(P_vec,scale_sum_vec);
 		_mm256_storeu_ps(P+j,P_vec_scaled_norm);
@@ -474,25 +473,22 @@ inline void blocking2(float* P, int N, float scale) {
 	}
 
     //TODO: N not dividable by 8 case. Further optimizable?
-    if(N%8 != 0){
-        int nN = N * ((n-8)+1);
-        for (int n = (n-8)+1; n < N; ++n){// where left off
-		int mN = 0;
-            for(int m = 0; m < N; m++) {
-                if(m==n){
-                    mN += N;
-                    continue;
-                }
-			P[nN + m] += P[mN + n];
-			P[mN + n]  = P[nN + m];
-                sum_P += P[nN +m];
-			    mN += N;
-		    }
-		    nN += N;
+    for (; n < N; ++n){// where left off
+	int mN = 0;
+        for(int m = 0; m < N; m++) {
+            if(m==n){
+                mN += N;
+                continue;
+            }
+		P[nN + m] += P[mN + n];
+		P[mN + n]  = P[nN + m];
+            sum_P += P[nN +m];
+		    mN += N;
 	    }
+	    nN += N;
     }
 
-	//compute the sum_S
+    //compute the sum_S
     __m256 s = _mm256_hadd_ps(sum_P_vector,sum_P_vector);
     sum_P +=  s[0] + s[1] + s[4] + s[5];
 
@@ -587,42 +583,6 @@ inline void blocking3(float* P, int N, float scale) {
 
 			transpose8_ps(col_transposed0, col_transposed1, col_transposed2, col_transposed3, col_transposed4, col_transposed5, col_transposed6, col_transposed7);
 
-            // __m256 row_transposed0 = _mm256_set_ps(col0[0],col1[0],col2[0],col3[0],
-            //         col4[0],col5[0],col6[0],col7[0]);
-            // __m256 row_transposed1 = _mm256_set_ps(col0[1],col1[1],col2[1],col3[1],
-            //         col4[1],col5[1],col6[1],col7[0]);
-            // __m256 row_transposed2 = _mm256_set_ps(col0[2],col1[2],col2[2],col3[2],
-            //         col4[2],col5[2],col6[2],col7[2]);
-            // __m256 row_transposed3 = _mm256_set_ps(col0[3],col1[3],col2[3],col3[3],
-            //         col4[3],col5[3],col6[3],col7[3]);
-            // __m256 row_transposed4 = _mm256_set_ps(col0[4],col1[4],col2[4],col3[4],
-            //         col4[4],col5[4],col6[4],col7[4]);
-            // __m256 row_transposed5 = _mm256_set_ps(col0[5],col1[5],col2[5],col3[5],
-            //         col4[5],col5[5],col6[5],col7[5]);
-            // __m256 row_transposed6 = _mm256_set_ps(col0[6],col1[6],col2[6],col3[6],
-            //         col4[6],col5[6],col6[6],col7[6]);
-            // __m256 row_transposed7 = _mm256_set_ps(col0[7],col1[7],col2[7],col3[7],
-            //         col4[7],col5[7],col6[7],col7[7]);
-
-            // __m256 col_transposed0 = _mm256_set_ps(row0[0],row1[0],row2[0],row3[0],
-            //         row4[0],row5[0],row6[0],row7[0]);
-            // __m256 col_transposed1 = _mm256_set_ps(row0[1],row1[1],row2[1],row3[1],
-            //         row4[1],row5[1],row6[1],row7[0]);
-            // __m256 col_transposed2 = _mm256_set_ps(row0[2],row1[2],row2[2],row3[2],
-            //         row4[2],row5[2],row6[2],row7[2]);
-            // __m256 col_transposed3 = _mm256_set_ps(row0[3],row1[3],row2[3],row3[3],
-            //         row4[3],row5[3],row6[3],row7[3]);
-            // __m256 col_transposed4 = _mm256_set_ps(row0[4],row1[4],row2[4],row3[4],
-            //         row4[4],row5[4],row6[4],row7[4]);
-            // __m256 col_transposed5 = _mm256_set_ps(row0[5],row1[5],row2[5],row3[5],
-            //         row4[5],row5[5],row6[5],row7[5]);
-            // __m256 col_transposed6 = _mm256_set_ps(row0[6],row1[6],row2[6],row3[6],
-            //         row4[6],row5[6],row6[6],row7[6]);
-            // __m256 col_transposed7 = _mm256_set_ps(row0[7],row1[7],row2[7],row3[7],
-            //         row4[7],row5[7],row6[7],row7[7]);
-
-
-
             __m256 row0_sum = _mm256_add_ps(row0,row_transposed0);
 			__m256 row1_sum = _mm256_add_ps(row1,row_transposed1);
 			__m256 row2_sum = _mm256_add_ps(row2,row_transposed2);
@@ -700,23 +660,21 @@ inline void blocking3(float* P, int N, float scale) {
 	}
 
     //TODO: N not dividable by 8 case. Further optimizable?
-    if(N%8 != 0){
-        int nN = N * ((n-8)+1);
-        for (int n = (n-8)+1; n < N; ++n){// where left off
-		int mN = 0;
-            for(int m = 0; m < N; m++) {
-                if(m==n){
-                    mN += N;
-                    continue;
-                }
-			P[nN + m] += P[mN + n];
-			P[mN + n]  = P[nN + m];
-                sum_P += P[nN +m];
-			    mN += N;
-		    }
-		    nN += N;
+    for (; n < N; ++n){// where left off
+	    int mN = 0;
+        for(int m = 0; m < N; m++) {
+            if(m==n){
+                mN += N;
+                continue;
+            }
+		P[nN + m] += P[mN + n];
+		P[mN + n]  = P[nN + m];
+            sum_P += P[nN +m];
+		    mN += N;
 	    }
+	    nN += N;
     }
+
 
 	//compute the sum_S
     __m256 s = _mm256_hadd_ps(sum_P_vector,sum_P_vector);

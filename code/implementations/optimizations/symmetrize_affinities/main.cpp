@@ -171,6 +171,7 @@ int main(int argc, char **argv) {
         for (int i = 0; i < numFuncs; i++) {
             cycles = perf_test(userFuncs[i], n);
             printf(",%lf", cycles);
+            fflush(stdout);
         }
         printf("\n");
     }

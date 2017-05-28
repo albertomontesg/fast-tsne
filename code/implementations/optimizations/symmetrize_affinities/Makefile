@@ -1,4 +1,4 @@
-CC=g++
+CC=g++-4.9
 CFLAGS=-O3 -march=native -mavx -std=c++11
 SRC=main.cpp
 BIN=run.o
