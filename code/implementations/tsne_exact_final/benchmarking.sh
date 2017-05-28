@@ -1,6 +1,6 @@
 #!/bin/sh
 
-COMPILER="gcc"
+COMPILER="icc"
 # Choose compiler taking into account the computers running macOS
 if [ "$COMPILER" == "gcc" ]; then
     FLAGS="-O3 -march=native -mavx -mfma -lstdc++ -std=c++11"
