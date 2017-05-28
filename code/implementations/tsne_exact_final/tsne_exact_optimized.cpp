@@ -161,19 +161,6 @@ void run(float* X, int N, int D, float* Y, int no_dims, float perplexity,
 	save_data(P, N, N, "./datum/P_sym");
 	#endif
 
-
-	// Early exageration
-    // #ifdef BENCHMARK
-    // start_early_exageration = start_tsc();
-    // #endif
-    // // Compute
-    // early_exageration(P, N, 12.0);
-    // // End compute
-    // #ifdef BENCHMARK
-    // cycles_early_exageration += (double) stop_tsc(start_early_exageration);
-    // #endif
-
-
 	// Initialize Q low dimensionality affinity matrix and gradient dC
 	float* Q = (float*) _mm_malloc(N * N * sizeof(float), 32);
 	float* uY = (float*) _mm_malloc(N * no_dims * sizeof(float), 32);

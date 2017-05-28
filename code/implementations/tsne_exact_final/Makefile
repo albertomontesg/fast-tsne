@@ -5,7 +5,7 @@ else
 endif
 CC=g++-4.9
 
-CFLAGS=-O3 -march=native -DCOUNTING
+CFLAGS=-O3 -march=native -DBENCHMARK
 SRC=tsne_exact_optimized.cpp
 BIN_BASELINE=./bin/tsne_base.o
 BIN_SCALAR=./bin/tsne_scalar.o
