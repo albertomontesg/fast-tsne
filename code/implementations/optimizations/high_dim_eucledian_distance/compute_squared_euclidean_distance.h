@@ -5,8 +5,7 @@
 #include <iostream>
 #include <x86intrin.h>
 // Compute squared euclidean disctance for all pairs of vectors X_i X_j
-inline void base_version(float* X, int N, int D, float* DD, float* mean, int max_value) {
-
+inline void base_version(float* X, int N, int D, float* DD, int max_value) {
     int nD = 0;
     for(int n = 0; n < N; n++) {
         for(int d = 0; d < D; d++) {

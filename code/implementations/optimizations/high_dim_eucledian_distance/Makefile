@@ -1,7 +1,7 @@
 GCC=g++-4.9
 ICC=icc
-GCCFLAGS=-O3 -funroll-all-loops -march=native -mavx2 -mfma -ffast-math -std=c++11 -DSINGLE_PRECISION
-ICCFLAGS=-O3 -march=core-avx2 -std=c++11 -unroll -fp-model fast -DSINGLE_PRECISION
+GCCFLAGS=-O3 -march=native -mavx2 -mfma -ffast-math -std=c++11 -DSINGLE_PRECISION
+ICCFLAGS=-O3 -march=core-avx2 -std=c++11 -fp-model fast -DSINGLE_PRECISION
 SRC=main.cpp
 BIN_NO_VEC_GCC = run_gcc_novec
 BIN_VEC_GCC = run_gcc_vec
