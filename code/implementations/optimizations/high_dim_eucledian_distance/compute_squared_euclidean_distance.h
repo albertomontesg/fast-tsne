@@ -154,6 +154,145 @@ inline void fast_scalar(float* X, int N, int D, float* DD, float* mean, int max_
     }
 }
 
+inline void fast_scalar_start_matter(float* X, int N, int D, float* DD, float* mean, int max_value) {
+
+    const int leftover_start = D-D%8;
+    const float oneOverN = 1.0/N;
+    int nD = 0;
+    float max_X = .0;
+    for(int d = 0; d < leftover_start; d+=8) {
+        float accum0 = 0.0;
+        float accum1 = 0.0;
+        float accum2 = 0.0;
+        float accum3 = 0.0;
+        float accum4 = 0.0;
+        float accum5 = 0.0;
+        float accum6 = 0.0;
+        float accum7 = 0.0;
+        for(int n = 0; n < N; n++) {
+            accum0 += X[n*D + d];
+            accum1 += X[n*D + d + 1];
+            accum2 += X[n*D + d + 2];
+            accum3 += X[n*D + d + 3];
+            accum4 += X[n*D + d + 4];
+            accum5 += X[n*D + d + 5];
+            accum6 += X[n*D + d + 6];
+            accum7 += X[n*D + d + 7];
+        }
+        accum0 *= oneOverN;
+        accum1 *= oneOverN;
+        accum2 *= oneOverN;
+        accum3 *= oneOverN;
+        accum4 *= oneOverN;
+        accum5 *= oneOverN;
+        accum6 *= oneOverN;
+        accum7 *= oneOverN;
+        for(int n = 0; n < N; n++) {
+            X[n*D + d] -= accum0;
+            X[n*D + d + 1] -= accum1;
+            X[n*D + d + 2] -= accum2;
+            X[n*D + d + 3] -= accum3;
+            X[n*D + d + 4] -= accum4;
+            X[n*D + d + 5] -= accum5;
+            X[n*D + d + 6] -= accum6;
+            X[n*D + d + 7] -= accum7;
+            const float max0 = fmaxf(fabsf(X[n*D + d]), fabsf(X[n*D + d + 1]));
+            const float max1 = fmaxf(fabsf(X[n*D + d + 2]), fabsf(X[n*D + d + 3]));
+            const float max2 = fmaxf(fabsf(X[n*D + d + 4]), fabsf(X[n*D + d + 5]));
+            const float max3 = fmaxf(fabsf(X[n*D + d + 6]), fabsf(X[n*D + d + 7]));
+            const float max4 = fmaxf(max0, max1);
+            const float max5 = fmaxf(max2, max3);
+            const float max6 = fmaxf(max4, max5);
+            max_X = fmaxf(max_X, max6);
+        }
+    }
+    for(int d = leftover_start; d < D; d++) {
+        float accum0 = 0.0;
+        for(int n = 0; n < N; n++) {
+            accum0 += X[n*D + d];
+        }
+        accum0 *= oneOverN;
+        for(int n = 0; n < N; n++) {
+            X[n*D + d] -= accum0;
+            max_X = fmaxf(max_X, fabsf(X[n*D + d]));
+        }
+    }
+
+
+    // Subtract data mean
+    // std::cout << max_X << std::endl;
+    const float factor = 1.0/(max_X*max_X);
+
+    int iN = 0; int iD = 0;
+    for (int i = 0; i < N; ++i)
+    {
+        DD[iN + i] = 0;
+        int jD = iD + D;
+        int jN = iN + N;
+        for (int j = i+1; j < N; ++j)
+        {
+            const int iNj = iN + j;
+            // DD[iNj] = 0;
+            float accum0 = 0;
+            float accum1 = 0;
+            float accum2 = 0;
+            float accum3 = 0;
+            float accum4 = 0;
+            float accum5 = 0;
+            float accum6 = 0;
+            float accum7 = 0;
+
+            for(int d = 0; d < leftover_start; d+=8)
+            {
+                const int iDd = iD + d;
+                const int jDd = jD + d;
+                const float dist0 = X[iDd    ] - X[jDd    ];
+                const float dist1 = X[iDd+1] - X[jDd+1];
+                const float dist2 = X[iDd+2] - X[jDd+2];
+                const float dist3 = X[iDd+3] - X[jDd+3];
+                const float dist4 = X[iDd+4] - X[jDd+4];
+                const float dist5 = X[iDd+5] - X[jDd+5];
+                const float dist6 = X[iDd+6] - X[jDd+6];
+                const float dist7 = X[iDd+7] - X[jDd+7];
+                const float prod0 = dist0 * dist0;
+                const float prod1 = dist1 * dist1;
+                const float prod2 = dist2 * dist2;
+                const float prod3 = dist3 * dist3;
+                const float prod4 = dist4 * dist4;
+                const float prod5 = dist5 * dist5;
+                const float prod6 = dist6 * dist6;
+                const float prod7 = dist7 * dist7;
+                accum0 += prod0;
+                accum1 += prod1;
+                accum2 += prod2;
+                accum3 += prod3;
+                accum4 += prod4;
+                accum5 += prod5;
+                accum6 += prod6;
+                accum7 += prod7;
+                // std::cout << d << std::endl;
+            }
+            
+            const float sum0 = accum1 + accum2 + accum3 + accum4 + accum5 + accum6 + accum7; 
+            for(int d = leftover_start; d < D; d++)
+            {
+                // std::cout << d << std::endl;
+                const float dist0 = X[iD + d] - X[jD + d];
+                const float prod0 = dist0 * dist0;
+                accum0 += prod0;
+            }
+            const float sum1 = accum0 + sum0;
+            const float dist = sum1 * factor;
+            DD[iNj] = dist;
+            DD[jN + i] = dist;
+            jD += D;
+            jN += N;
+        }
+        iN += N;
+        iD += D;
+    }
+}
+
 
 inline void fast_scalar_avx(float* X, int N, int D, float* DD, float* mean, int max_value) {
 
@@ -276,7 +415,7 @@ inline void fast_scalar_avx_start_matter(float* X, int N, int D, float* DD, floa
         __m256 accum5678 = _mm256_add_ps(accum56, accum78);
         __m256 accum = _mm256_add_ps(accum1234, accum5678);
         accum = _mm256_mul_ps(oneOverN_avx, accum);
-        _mm256_storeu_ps(mean + d, accum);
+        //_mm256_storeu_ps(mean + d, accum);
 
         for(int n = 0; n < N; n++) {
             __m256 m1 = _mm256_loadu_ps(X + n*D + d);
@@ -368,31 +507,70 @@ inline void fast_scalar_avx_start_matter(float* X, int N, int D, float* DD, floa
 inline void fast_scalar_4x4_base(float* X, int N, int D, float* DD, float* mean, int max_value) {
 
     const int leftover_start = D-D%8;
-
+    const float oneOverN = 1.0/N;
     int nD = 0;
-    for(int n = 0; n < N; n++) {
-        for(int d = 0; d < D; d++) {
-            mean[d] += X[nD + d];
+    float max_X = .0;
+    for(int d = 0; d < leftover_start; d+=8) {
+        float accum0 = 0.0;
+        float accum1 = 0.0;
+        float accum2 = 0.0;
+        float accum3 = 0.0;
+        float accum4 = 0.0;
+        float accum5 = 0.0;
+        float accum6 = 0.0;
+        float accum7 = 0.0;
+        for(int n = 0; n < N; n++) {
+            accum0 += X[n*D + d];
+            accum1 += X[n*D + d + 1];
+            accum2 += X[n*D + d + 2];
+            accum3 += X[n*D + d + 3];
+            accum4 += X[n*D + d + 4];
+            accum5 += X[n*D + d + 5];
+            accum6 += X[n*D + d + 6];
+            accum7 += X[n*D + d + 7];
         }
-        nD += D;
+        accum0 *= oneOverN;
+        accum1 *= oneOverN;
+        accum2 *= oneOverN;
+        accum3 *= oneOverN;
+        accum4 *= oneOverN;
+        accum5 *= oneOverN;
+        accum6 *= oneOverN;
+        accum7 *= oneOverN;
+        for(int n = 0; n < N; n++) {
+            X[n*D + d] -= accum0;
+            X[n*D + d + 1] -= accum1;
+            X[n*D + d + 2] -= accum2;
+            X[n*D + d + 3] -= accum3;
+            X[n*D + d + 4] -= accum4;
+            X[n*D + d + 5] -= accum5;
+            X[n*D + d + 6] -= accum6;
+            X[n*D + d + 7] -= accum7;
+            const float max0 = fmaxf(fabsf(X[n*D + d]), fabsf(X[n*D + d + 1]));
+            const float max1 = fmaxf(fabsf(X[n*D + d + 2]), fabsf(X[n*D + d + 3]));
+            const float max2 = fmaxf(fabsf(X[n*D + d + 4]), fabsf(X[n*D + d + 5]));
+            const float max3 = fmaxf(fabsf(X[n*D + d + 6]), fabsf(X[n*D + d + 7]));
+            const float max4 = fmaxf(max0, max1);
+            const float max5 = fmaxf(max2, max3);
+            const float max6 = fmaxf(max4, max5);
+            max_X = fmaxf(max_X, max6);
+        }
     }
-    for(int d = 0; d < D; d++) {
-        mean[d] /= (float) N;
+    for(int d = leftover_start; d < D; d++) {
+        float accum0 = 0.0;
+        for(int n = 0; n < N; n++) {
+            accum0 += X[n*D + d];
+        }
+        accum0 *= oneOverN;
+        for(int n = 0; n < N; n++) {
+            X[n*D + d] -= accum0;
+            max_X = fmaxf(max_X, fabsf(X[n*D + d]));
+        }
     }
 
-    // Subtract data mean
-    float max_X = .0;
-    nD = 0;
-    for(int n = 0; n < N; n++) {
-        for(int d = 0; d < D; d++) {
-            X[nD + d] -= mean[d];
-            if(fabsf(X[nD + d]) > max_X) max_X = fabsf(X[nD + d]);
-        }
-        nD += D;
-    }
     // std::cout << max_X << std::endl;
     const float factor = 1.0/(max_X*max_X);
-    const __m256 avx_factor = _mm256_set1_ps(factor);
+    //const __m256 avx_factor = _mm256_set1_ps(factor);
 
     for (int i = 0; i < N; i+=4)
     {
@@ -461,29 +639,66 @@ inline void fast_scalar_4x4_base(float* X, int N, int D, float* DD, float* mean,
 inline void fast_scalar_8x8_base(float* X, int N, int D, float* DD, float* mean, int max_value) {
 
     const int leftover_start = D-D%8;
-
+    const float oneOverN = 1.0/N;
     int nD = 0;
-    for(int n = 0; n < N; n++) {
-        for(int d = 0; d < D; d++) {
-            mean[d] += X[nD + d];
-        }
-        nD += D;
-    }
-    for(int d = 0; d < D; d++) {
-        mean[d] /= (float) N;
-    }
-
-    // Subtract data mean
     float max_X = .0;
-    nD = 0;
-    for(int n = 0; n < N; n++) {
-        for(int d = 0; d < D; d++) {
-            X[nD + d] -= mean[d];
-            if(fabsf(X[nD + d]) > max_X) max_X = fabsf(X[nD + d]);
+    for(int d = 0; d < leftover_start; d+=8) {
+        float accum0 = 0.0;
+        float accum1 = 0.0;
+        float accum2 = 0.0;
+        float accum3 = 0.0;
+        float accum4 = 0.0;
+        float accum5 = 0.0;
+        float accum6 = 0.0;
+        float accum7 = 0.0;
+        for(int n = 0; n < N; n++) {
+            accum0 += X[n*D + d];
+            accum1 += X[n*D + d + 1];
+            accum2 += X[n*D + d + 2];
+            accum3 += X[n*D + d + 3];
+            accum4 += X[n*D + d + 4];
+            accum5 += X[n*D + d + 5];
+            accum6 += X[n*D + d + 6];
+            accum7 += X[n*D + d + 7];
         }
-        nD += D;
+        accum0 *= oneOverN;
+        accum1 *= oneOverN;
+        accum2 *= oneOverN;
+        accum3 *= oneOverN;
+        accum4 *= oneOverN;
+        accum5 *= oneOverN;
+        accum6 *= oneOverN;
+        accum7 *= oneOverN;
+        for(int n = 0; n < N; n++) {
+            X[n*D + d] -= accum0;
+            X[n*D + d + 1] -= accum1;
+            X[n*D + d + 2] -= accum2;
+            X[n*D + d + 3] -= accum3;
+            X[n*D + d + 4] -= accum4;
+            X[n*D + d + 5] -= accum5;
+            X[n*D + d + 6] -= accum6;
+            X[n*D + d + 7] -= accum7;
+            const float max0 = fmaxf(fabsf(X[n*D + d]), fabsf(X[n*D + d + 1]));
+            const float max1 = fmaxf(fabsf(X[n*D + d + 2]), fabsf(X[n*D + d + 3]));
+            const float max2 = fmaxf(fabsf(X[n*D + d + 4]), fabsf(X[n*D + d + 5]));
+            const float max3 = fmaxf(fabsf(X[n*D + d + 6]), fabsf(X[n*D + d + 7]));
+            const float max4 = fmaxf(max0, max1);
+            const float max5 = fmaxf(max2, max3);
+            const float max6 = fmaxf(max4, max5);
+            max_X = fmaxf(max_X, max6);
+        }
     }
-    // std::cout << max_X << std::endl;
+    for(int d = leftover_start; d < D; d++) {
+        float accum0 = 0.0;
+        for(int n = 0; n < N; n++) {
+            accum0 += X[n*D + d];
+        }
+        accum0 *= oneOverN;
+        for(int n = 0; n < N; n++) {
+            X[n*D + d] -= accum0;
+            max_X = fmaxf(max_X, fabsf(X[n*D + d]));
+        }
+    }
     const float factor = 1.0/(max_X*max_X);
 
     for (int i = 0; i < N; i+=8)
@@ -644,29 +859,66 @@ inline void fast_scalar_8x8_base_k(float* X, int N, int D, float* DD, float* mea
 inline void fast_scalar_8x8x8_big_unroll(float* X, int N, int D, float* DD, float* mean, int max_value) {
 
     const int leftover_start = D-D%8;
-
+    const float oneOverN = 1.0/N;
     int nD = 0;
-    for(int n = 0; n < N; n++) {
-        for(int d = 0; d < D; d++) {
-            mean[d] += X[nD + d];
-        }
-        nD += D;
-    }
-    for(int d = 0; d < D; d++) {
-        mean[d] /= (float) N;
-    }
-
-    // Subtract data mean
     float max_X = .0;
-    nD = 0;
-    for(int n = 0; n < N; n++) {
-        for(int d = 0; d < D; d++) {
-            X[nD + d] -= mean[d];
-            if(fabsf(X[nD + d]) > max_X) max_X = fabsf(X[nD + d]);
+    for(int d = 0; d < leftover_start; d+=8) {
+        float accum0 = 0.0;
+        float accum1 = 0.0;
+        float accum2 = 0.0;
+        float accum3 = 0.0;
+        float accum4 = 0.0;
+        float accum5 = 0.0;
+        float accum6 = 0.0;
+        float accum7 = 0.0;
+        for(int n = 0; n < N; n++) {
+            accum0 += X[n*D + d];
+            accum1 += X[n*D + d + 1];
+            accum2 += X[n*D + d + 2];
+            accum3 += X[n*D + d + 3];
+            accum4 += X[n*D + d + 4];
+            accum5 += X[n*D + d + 5];
+            accum6 += X[n*D + d + 6];
+            accum7 += X[n*D + d + 7];
         }
-        nD += D;
+        accum0 *= oneOverN;
+        accum1 *= oneOverN;
+        accum2 *= oneOverN;
+        accum3 *= oneOverN;
+        accum4 *= oneOverN;
+        accum5 *= oneOverN;
+        accum6 *= oneOverN;
+        accum7 *= oneOverN;
+        for(int n = 0; n < N; n++) {
+            X[n*D + d] -= accum0;
+            X[n*D + d + 1] -= accum1;
+            X[n*D + d + 2] -= accum2;
+            X[n*D + d + 3] -= accum3;
+            X[n*D + d + 4] -= accum4;
+            X[n*D + d + 5] -= accum5;
+            X[n*D + d + 6] -= accum6;
+            X[n*D + d + 7] -= accum7;
+            const float max0 = fmaxf(fabsf(X[n*D + d]), fabsf(X[n*D + d + 1]));
+            const float max1 = fmaxf(fabsf(X[n*D + d + 2]), fabsf(X[n*D + d + 3]));
+            const float max2 = fmaxf(fabsf(X[n*D + d + 4]), fabsf(X[n*D + d + 5]));
+            const float max3 = fmaxf(fabsf(X[n*D + d + 6]), fabsf(X[n*D + d + 7]));
+            const float max4 = fmaxf(max0, max1);
+            const float max5 = fmaxf(max2, max3);
+            const float max6 = fmaxf(max4, max5);
+            max_X = fmaxf(max_X, max6);
+        }
     }
-    // std::cout << max_X << std::endl;
+    for(int d = leftover_start; d < D; d++) {
+        float accum0 = 0.0;
+        for(int n = 0; n < N; n++) {
+            accum0 += X[n*D + d];
+        }
+        accum0 *= oneOverN;
+        for(int n = 0; n < N; n++) {
+            X[n*D + d] -= accum0;
+            max_X = fmaxf(max_X, fabsf(X[n*D + d]));
+        }
+    }
     const float factor = 1.0/(max_X*max_X);
 
     for (int i = 0; i < N; i+=8)
@@ -1317,7 +1569,7 @@ inline void fast_scalar_8x8x8_avx_with_start(float* X, int N, int D, float* DD, 
         __m256 accum5678 = _mm256_add_ps(accum56, accum78);
         __m256 accum = _mm256_add_ps(accum1234, accum5678);
         accum = _mm256_mul_ps(oneOverN_avx, accum);
-        _mm256_storeu_ps(mean + d, accum);
+        //_mm256_storeu_ps(mean + d, accum);
 
         for(int n = 0; n < N; n++) {
             __m256 m1 = _mm256_loadu_ps(X + n*D + d);
@@ -1625,7 +1877,7 @@ inline void fast_scalar_8x8x8_avx_with_start_more_block(float* X, int N, int D, 
         __m256 accum5678 = _mm256_add_ps(accum56, accum78);
         __m256 accum = _mm256_add_ps(accum1234, accum5678);
         accum = _mm256_mul_ps(oneOverN_avx, accum);
-        _mm256_storeu_ps(mean + d, accum);
+        //_mm256_storeu_ps(mean + d, accum);
 
         for(int n = 0; n < N; n++) {
             __m256 m1 = _mm256_loadu_ps(X + n*D + d);

@@ -1,24 +1,43 @@
 GCC=g++-4.9
 ICC=icc
-GCCFLAGS=-O3 -march=native -mavx2 -mfma -ffast-math -std=c++11 -DSINGLE_PRECISION
-ICCFLAGS=-O3 -march=core-avx2 -std=c++11 -DSINGLE_PRECISION
+GCCFLAGS=-O3 -funroll-all-loops -march=native -mavx2 -mfma -ffast-math -std=c++11 -DSINGLE_PRECISION
+ICCFLAGS=-O3 -march=core-avx2 -std=c++11 -unroll -fp-model fast -DSINGLE_PRECISION
 SRC=main.cpp
-BIN_NO_VEC_GCC = run_gcc
+BIN_NO_VEC_GCC = run_gcc_novec
 BIN_VEC_GCC = run_gcc_vec
-BIN_NO_VEC_ICC = run_icc
+BIN_NO_VEC_ICC = run_icc_novec
 BIN_VEC_ICC = run_icc_vec
-
+TRUE = 1
+FALSE = 0
+DO_SCALAR= $(FALSE)
 
 all: compile benchmark
 
 compile:
-	$(GCC) $(GCCFLAGS)  $(SRC) -o ./$(BIN_VEC_GCC)
-	$(ICC) $(ICCFLAGS) $(SRC) -o ./$(BIN_VEC_ICC)
-	$(GCC) $(GCCFLAGS) -fno-tree-vectorize  $(SRC) -o ./$(BIN_NO_VEC_GCC)
-	$(ICC) $(ICCFLAGS) -no-vec $(SRC) -o ./$(BIN_NO_VEC_ICC)
+	{																							 \
+	if [ "$(DO_SCALAR)" -eq "$(TRUE)" ]; then													 \
+		$(GCC) $(GCCFLAGS) -DSCALAR -fno-tree-vectorize -mno-abm  $(SRC) -o ./$(BIN_NO_VEC_GCC)	;\
+		$(ICC) $(ICCFLAGS) -DSCALAR -no-vec $(SRC) -o ./$(BIN_NO_VEC_ICC)						;\
+	else																						 \
+ 		$(GCC) $(GCCFLAGS)  $(SRC) -o ./$(BIN_VEC_GCC)											;\
+ 		$(ICC) $(ICCFLAGS) $(SRC) -o ./$(BIN_VEC_ICC)											;\
+	fi																							;\
+	} 
+
 
 benchmark: compile
-	./$(BIN) > $(OUT_FILE)
+	{										  \
+	if [ "$(DO_SCALAR)" -eq "$(TRUE)" ]; then \
+		./$(BIN_NO_VEC_GCC)					 ;\
+		./$(BIN_NO_VEC_ICC)					 ;\
+	else									  \
+ 		./$(BIN_VEC_GCC)					 ;\
+ 		./$(BIN_VEC_ICC)					 ;\
+	fi										 ;\
+	} 
 
 clean:
-	if [ -f $(BIN) ] ; then rm $(BIN) ; fi;
+	rm $(BIN_VEC_GCC)
+	rm $(BIN_NO_VEC_GCC)
+	rm $(BIN_VEC_ICC)
+	rm $(BIN_NO_VEC_ICC)
