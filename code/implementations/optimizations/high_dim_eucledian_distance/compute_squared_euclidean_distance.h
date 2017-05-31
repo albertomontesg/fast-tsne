@@ -1291,22 +1291,22 @@ inline void fast_scalar_8x8x8_big_unroll(float* X, int N, int D, float* DD, floa
             const float b8_sum = b8_accum0 + b8_accum1 + b8_accum2 + b8_accum3 +
                                  b8_accum4 + b8_accum5 + b8_accum6 + b8_accum7;
             const float b8_res = b8_sum*factor;
-            DD[ii*N + jj] += b1_res;
-            DD[ii*N + (jj + 1)] += b2_res;
-            DD[ii*N + (jj + 2)] += b3_res;
-            DD[ii*N + (jj + 3)] += b4_res;
-            DD[ii*N + (jj + 4)] += b5_res;
-            DD[ii*N + (jj + 5)] += b6_res;
-            DD[ii*N + (jj + 6)] += b7_res;
-            DD[ii*N + (jj + 7)] += b8_res;
-            DD[jj*N + ii] += b1_res;
-            DD[(jj + 1)*N + ii] += b2_res;
-            DD[(jj + 2)*N + ii] += b3_res;
-            DD[(jj + 3)*N + ii] += b4_res;
-            DD[(jj + 4)*N + ii] += b5_res;
-            DD[(jj + 5)*N + ii] += b6_res;
-            DD[(jj + 6)*N + ii] += b7_res;
-            DD[(jj + 7)*N + ii] += b8_res;
+            DD[ii*N + jj] = b1_res;
+            DD[ii*N + (jj + 1)] = b2_res;
+            DD[ii*N + (jj + 2)] = b3_res;
+            DD[ii*N + (jj + 3)] = b4_res;
+            DD[ii*N + (jj + 4)] = b5_res;
+            DD[ii*N + (jj + 5)] = b6_res;
+            DD[ii*N + (jj + 6)] = b7_res;
+            DD[ii*N + (jj + 7)] = b8_res;
+            DD[jj*N + ii] = b1_res;
+            DD[(jj + 1)*N + ii] = b2_res;
+            DD[(jj + 2)*N + ii] = b3_res;
+            DD[(jj + 3)*N + ii] = b4_res;
+            DD[(jj + 4)*N + ii] = b5_res;
+            DD[(jj + 5)*N + ii] = b6_res;
+            DD[(jj + 6)*N + ii] = b7_res;
+            DD[(jj + 7)*N + ii] = b8_res;
                 }
             }
         }
@@ -1369,8 +1369,8 @@ inline void fast_scalar_8x8x8_big_unroll(float* X, int N, int D, float* DD, floa
             const float b1_sum = b1_accum0 + b1_accum1 + b1_accum2 + b1_accum3 +
                                  b1_accum4 + b1_accum5 + b1_accum6 + b1_accum7;
             const float b1_res = b1_sum*factor;
-            DD[ii*N + j] += b1_res;
-            DD[j*N + ii] += b1_res;
+            DD[ii*N + j] = b1_res;
+            DD[j*N + ii] = b1_res;
         }
         }
 
