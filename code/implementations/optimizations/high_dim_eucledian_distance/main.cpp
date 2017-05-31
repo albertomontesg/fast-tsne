@@ -13,13 +13,13 @@
 
 #define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e5
-#define N_START     8
+#define N_START     500
 // #define N_STOP      8192
-#define N_STOP      129
-#define N_INTERVAL  2
-#define D_START     8
+#define N_STOP      1000
+#define N_INTERVAL  500
+#define D_START     500
 // #define D_STOP      8192
-#define D_STOP      129
+#define D_STOP      500
 #define D_INTERVAL  2
 #define EPS         1e-4
 
@@ -179,8 +179,8 @@ int main(int argc, char **argv) {
     //nice uneven numbers, to see edgecase handling
     // int N = 513;
     // int D = 66;
-    int N = 512;
-    int D = 64;
+    int N = 513;
+    int D = 65;
 
     
     float *Xc, *DDr, *DDc, *meansc, *meansr;
@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
     printf("N,D");
     for (int i = 0; i < numFuncs; i++) printf(",%s", funcNames[i]);
     printf("\n");
-    for (int n = n_start; n <= n_stop; n *= n_interval) {
+    for (int n = n_start; n <= n_stop; n += n_interval) {
     for (int d = d_start; d <= d_stop; d *= d_interval) {
         printf("%d,%d", n, d);
 

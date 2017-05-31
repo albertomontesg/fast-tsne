@@ -9,7 +9,7 @@ BIN_NO_VEC_ICC = run_icc_novec
 BIN_VEC_ICC = run_icc_vec
 TRUE = 1
 FALSE = 0
-DO_SCALAR= $(FALSE)
+DO_SCALAR= $(TRUE)
 
 all: compile benchmark
 
