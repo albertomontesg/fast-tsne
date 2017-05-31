@@ -858,6 +858,8 @@ inline void fast_scalar_8x8_base_k(float* X, int N, int D, float* DD, float* mea
 inline void fast_scalar_8x8x8_big_unroll(float* X, int N, int D, float* DD, float* mean, int max_value) {
 
     const int leftover_start = D-D%8;
+    const int N_leftover_start = N-N%8;
+
     const float oneOverN = 1.0/N;
     int nD = 0;
     float max_X = .0;
@@ -920,7 +922,7 @@ inline void fast_scalar_8x8x8_big_unroll(float* X, int N, int D, float* DD, floa
     }
     const float factor = 1.0/(max_X*max_X);
 
-    for (int i = 0; i < N; i+=8)
+    for (int i = 0; i < N_leftover_start; i+=8)
     {
         for(int ii = i; ii < i+8; ii++)
         {
