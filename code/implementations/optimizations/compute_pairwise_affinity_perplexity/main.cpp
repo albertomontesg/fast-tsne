@@ -9,7 +9,6 @@
 #include "../../utils/random.h"
 #include "compute_pairwise_affinity_perplexity.h"
 
-
 #define NUM_RUNS    11
 #define CYCLES_REQUIRED 1e5
 #define N_START     8
@@ -35,9 +34,11 @@ void add_function(comp_func f, char *name);
 */
 void register_functions() {
     add_function(&base_version, "base_version");
+    add_function(&scalar_optimization, "subexpression and strength reduction");
     // Add your functions here
     // add_function(&your_function, "function: Optimization X");
     //the number of flops should not change
+    add_function(&perplexity_unrolling, "unrolling");
     add_function(&perplexity_blocking, "blocking");
 }
 
