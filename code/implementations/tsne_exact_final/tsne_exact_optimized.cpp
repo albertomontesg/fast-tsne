@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <immintrin.h>
 
+#define SINGLE_PRECISION
+
 #include "../utils/io.h"
 #include "../utils/tsc_x86.h"
 #include "../utils/random.h"
@@ -34,8 +36,8 @@
 #endif
 
 
-#define NUM_RUNS 1
-#define SINGLE_PRECISION
+#define NUM_RUNS 11
+
 
 #ifdef BENCHMARK
 double cycles = 0;
@@ -46,67 +48,6 @@ myInt64 start_ld_affinity, start_gradient;
 #endif
 
 
-bool load_data(float* data, int n, int* d, char* data_file) {
-
-	// Open file, read first 2 integers, allocate memory, and read the data
-    FILE *h;
-	if((h = fopen(data_file, "r+b")) == NULL) {
-		printf("Error: could not open data file.\n");
-		return false;
-	}
-
-    int magic_number, origN, rows, cols;
-    fread(&magic_number, sizeof(int), 1, h);
-    magic_number = reverse_int(magic_number);
-    if (magic_number != 2051) {
-        printf("Invalid magic number, it should be 2051, instead %d found\n", magic_number);
-        return false;
-    }
-    fread(&origN, sizeof(uint32_t), 1, h);
-    origN = reverse_int(origN);
-    #ifdef DEBUG
-    printf("Number of samples available: %d\n", origN);
-    #endif
-    if (n > origN) {
-        printf("N can not be larger than the number of samples in the data file (%d)\n", origN);
-        return false;
-    }
-
-    fread(&rows, sizeof(int), 1, h);
-    fread(&cols, sizeof(int), 1, h);
-    rows = reverse_int(rows);
-    cols = reverse_int(cols);
-    *d = rows * cols;
-
-    // Read the data
-    unsigned char* raw_data = (unsigned char*) malloc(*d * n * sizeof(uint8_t));
-    if(data == NULL) { printf("[data] Memory allocation failed!\n"); exit(1); }
-    if(raw_data == NULL) { printf("[raw_data] Memory allocation failed!\n"); exit(1); }
-
-    // Read raw data into unsigned char vector
-    fread(raw_data, sizeof(uint8_t), n * *d, h);
-
-    for (int i = 0; i < *d * n; i++) {
-        data[i] = ((float) raw_data[i]) / 255.;
-    }
-
-    // Showing image
-    if (false) {
-        int offset = 10;
-        printf("Sample %d\n\n", offset+1);
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                double v = data[offset * *d + i*cols+j];
-                if (v > 0.)
-                    printf("\x1B[31m %.2f \x1B[0m\t", v);
-                else printf("%.2f\t", v);
-            }
-            printf("\n");
-        }
-    }
-    free(raw_data); raw_data = NULL;
-    return true;
-}
 
 
 // Run function
@@ -284,10 +225,10 @@ int main(int argc, char **argv) {
     bool success = load_data(data, N, &D, data_file);
     if (!success) exit(1);
 
-	#ifdef DEBUG
-	int num_runs = 1;
-	#else
+	#ifdef BENCHMARK
 	int num_runs = NUM_RUNS;
+	#else
+	int num_runs = 1;
 	#endif
 
 	for (int i = 0; i < num_runs; i++) {

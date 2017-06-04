@@ -18,7 +18,7 @@ $CC --version
 
 SRC="tsne_exact_optimized.cpp"
 
-HEADER='N,pairwise_squared_euclidean_distance,pairwise_affinity_perplexity,symmetrize_affinities,low_dimensional_affinities,gradient_computation_update_normalize'
+HEADER='N,pairwise_squared_euclidean_distance,pairwise_affinity_perplexity,symmetrize_affinities,low_dimensional_affinities,gradient_computation_update_normalize,total'
 TODAY=$(date +%Y%m%d_%H%M%S)
 DATASET=../../../data/mnist/train-images.idx3-ubyte
 MAX_ITER=1000       # Maximum number of iterations
