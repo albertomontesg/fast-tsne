@@ -30,7 +30,7 @@ inline float compute_low_dimensional_affinities(float* Y, int N, int no_dims, fl
 	float sum_Q = .0;
     int nN = 0;
     for(int n = 0; n < N; n++) {
-	for(int m = 0; m < N; m++) {
+		for(int m = 0; m < N; m++) {
             if(n != m) {
                 Q[nN + m] = 1 / (1 + Q[nN + m]);
                 sum_Q += Q[nN + m];
