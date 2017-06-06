@@ -149,11 +149,6 @@ void run(float* X, int N, int D, float* Y, int no_dims, float perplexity,
         }
 	}
 
-	#ifdef BENCHMARK
-	cycles += cycles_distance + cycles_perplexity + cycles_symmetrize +
-        cycles_ld_affinity + cycles_gradient;
-	#endif
-
 	_mm_free(P); 		P = NULL;
 	_mm_free(DD); 		DD = NULL;
 	_mm_free(Q);		Q = NULL;
@@ -240,13 +235,15 @@ int main(int argc, char **argv) {
 	}
 
     #ifdef BENCHMARK
+	cycles += cycles_distance + cycles_perplexity + cycles_symmetrize +
+			cycles_ld_affinity + cycles_gradient;
 	cycles_distance /= (double) num_runs;
 	cycles_perplexity /= (double) num_runs;
 	cycles_symmetrize /= (double) num_runs;
 	cycles_ld_affinity /= (double) num_runs;
 	cycles_gradient /= (double) num_runs;
-
 	cycles /= (double) num_runs;
+
 	printf("%d,%lf,%lf,%lf,%lf,%lf,%lf\n", N,
 		cycles_distance, cycles_perplexity, cycles_symmetrize,
         cycles_ld_affinity, cycles_gradient, cycles);
