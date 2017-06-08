@@ -11,6 +11,7 @@ inline void compute_squared_euclidean_distance_high_normalize(float* X, int N, i
 
     const __m256 sign_mask = _mm256_set1_ps(-0.f); // -0.f = 1 << 31
 
+    int nD = 0;
     const float oneOverN = 1.0/N;
     const __m256 oneOverN_avx = _mm256_set1_ps(1.0/N);
     __m256 max = _mm256_setzero_ps();
@@ -54,7 +55,7 @@ inline void compute_squared_euclidean_distance_high_normalize(float* X, int N, i
         __m256 accum5678 = _mm256_add_ps(accum56, accum78);
         __m256 accum = _mm256_add_ps(accum1234, accum5678);
         accum = _mm256_mul_ps(oneOverN_avx, accum);
-        _mm256_storeu_ps(mean + d, accum);
+        //_mm256_storeu_ps(mean + d, accum);
 
         for(int n = 0; n < N; n++) {
             __m256 m1 = _mm256_loadu_ps(X + n*D + d);
@@ -151,7 +152,7 @@ inline void compute_squared_euclidean_distance_high_normalize(float* X, int N, i
         int jD = iD+8*D;
         int jN = iN+8*N;
         for (int j = i+8; j < N_leftover_start; j+=8)
-        {
+        {            
             iiN = iN;
             iiD = iD;
             int jNii = jN + i;
@@ -298,7 +299,7 @@ inline void compute_squared_euclidean_distance_high_normalize(float* X, int N, i
                 b1_accum = _mm256_hadd_ps(b1_accum, b1_accum);
 
                 const float sum0 = ((float *)&b1_accum)[0] + ((float *)&b1_accum)[1] +
-                                   ((float *)&b1_accum)[4] + ((float *)&b1_accum)[5];
+                                   ((float *)&b1_accum)[4] + ((float *)&b1_accum)[5]; 
                 const float sum = sum0 + b1_accum_leftover;
                 const float res = sum*factor;
                 DD[ii*N + jj] = res;
