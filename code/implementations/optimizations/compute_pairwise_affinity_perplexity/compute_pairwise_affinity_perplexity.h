@@ -92,13 +92,12 @@ inline void perplexity_blocking(float* X, int N, int D, float* P,
                 sum_P_accum_n1 = _mm256_add_ps(sum_P_accum_n1, P_vec_n1);
                 sum_P_accum_n2 = _mm256_add_ps(sum_P_accum_n2, P_vec_n2);
                 // H_now = beta * DD * P
+                // beta * DD
                 __m256 H_now_n1 = _mm256_mul_ps(beta_vec_n1,DD_row_n1);
                 __m256 H_now_n2 = _mm256_mul_ps(beta_vec_n2,DD_row_n2);
-				H_now_n1 = _mm256_mul_ps(H_now_n1,P_vec_n1);
-				H_now_n2 = _mm256_mul_ps(H_now_n2,P_vec_n2);
-                 // H += H_now
-                H_accum_n1 = _mm256_add_ps(H_accum_n1, H_now_n1);
-                H_accum_n2 = _mm256_add_ps(H_accum_n2, H_now_n2);
+                // fma: H += (beta * DD) * P
+                H_accum_n1 = _mm256_fmadd_ps(H_now_n1, P_vec_n1, H_accum_n1);
+                H_accum_n2 = _mm256_fmadd_ps(H_now_n2, P_vec_n2, H_accum_n2);
 
                 // m+=8
                 m_vec = _mm256_add_ps(m_vec, eight);
