@@ -3,6 +3,7 @@
 
 #include <immintrin.h>
 
+//from https://stackoverflow.com/questions/25622745/transpose-an-8x8-float-using-avx-avx2
 inline void transpose8_ps(__m256 &row0, __m256 &row1, __m256 &row2,
         __m256 &row3, __m256 &row4, __m256 &row5, __m256 &row6, __m256 &row7) {
     __m256 __t0, __t1, __t2, __t3, __t4, __t5, __t6, __t7;
