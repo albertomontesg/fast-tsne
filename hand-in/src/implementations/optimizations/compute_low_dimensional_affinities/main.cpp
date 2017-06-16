@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "../../utils/tsc_x86.h"
 // #include "../../utils/random.h"
-#include "compute_low_dimensional_affinities_2.h"
+#include "compute_low_dimensional_affinities.h"
 
 
 #define NUM_RUNS    31
