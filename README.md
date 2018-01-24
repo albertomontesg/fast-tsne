@@ -1,6 +1,6 @@
 
 
-# Fast 2d N^2 t-distributed Stochastic Neighbor Embedding
+# Fast 2D N^2 t-distributed Stochastic Neighbor Embedding
 
 by *Marc Fischer*, *Alberto Montes*, *Marko Pichler Trauber*, *Andreas Blöchliger*
 
