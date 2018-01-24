@@ -10,4 +10,4 @@ We present a faster implementation of the N^2 t-SNE embedding. Our version is re
 
 # Code
 
-All the optimizations and running code, as well as the presentation and the report are placed inside the `hand-in` folder.
+All the optimizations and running code, as well as the presentation and the [report](https://github.com/albertomontesg/fast-tsne/releases/download/hand-in/report_02.pdf) are placed inside the `hand-in` folder or the [final relase](https://github.com/albertomontesg/fast-tsne/releases/tag/hand-in).
